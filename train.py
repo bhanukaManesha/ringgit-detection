@@ -168,13 +168,18 @@ def generator(batch_size, noise=True):
         y_trains = []
         # Create batch data.
         for i in range(batch_size):
-            image, texts = generate_image(WIDTH, HEIGHT, seeds=random.sample(TEXTS, k=len(TEXTS)))
-            if not texts:
-                image = generate_noise(image)
-            x_data, y_data = convert_image_to_data(image, texts)
+            # image, texts = generate_image(WIDTH, HEIGHT, seeds=random.sample(TEXTS, k=len(TEXTS)))
+            x_data, y_data = load_batch()
+
+            # if not texts:
+            #     image = generate_noise(image)
+            # x_data, y_data = convert_image_to_data(image, texts)
+
+
             # Append
             x_trains.append(x_data)
             y_trains.append(y_data)
+            
         x_trains = np.asarray(x_trains).reshape((batch_size, HEIGHT, WIDTH, CHANNEL))
         y_trains = np.asarray(y_trains).reshape((batch_size, GRID_Y, GRID_X, 5+len(TEXTS)))
         yield x_trains, y_trains

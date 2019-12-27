@@ -1,0 +1,6 @@
+p2_sg.pem
+tf2/
+__pycache__/
+data/
+.vscode/
+.DS_Store

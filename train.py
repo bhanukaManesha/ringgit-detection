@@ -1,9 +1,18 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from common import *
+from generate_data import *
+
+from datetime import datetime
+import os
+import math
+import numpy as np
+import cv2
+import json
 
 import tensorflow as tf
 
+from tensorflow.keras.callbacks import ModelCheckpoint, Callback
 from tensorflow import keras
 from tensorflow.keras.metrics import binary_accuracy, categorical_accuracy
 from tensorflow.keras.optimizers import Adam
@@ -11,12 +20,10 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D
 from tensorflow.keras.backend import *
 
-import math
-
 
 def loss(fact, pred):
-    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(TEXTS)])
-    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(TEXTS)])
+    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
 
     # Truth
     fact_conf = fact[:,:,0]
@@ -57,8 +64,8 @@ def loss(fact, pred):
     return sum(conf_loss + box_loss + cat_loss, axis=-1)
 
 def P_(fact, pred):
-    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(TEXTS)])
-    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(TEXTS)])
+    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     # Truth
     fact_conf = fact[:,:,0]
     # Prediction
@@ -67,8 +74,8 @@ def P_(fact, pred):
     return binary_accuracy(fact_conf, pred_conf)
 
 def XY_(fact, pred):
-    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(TEXTS)])
-    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(TEXTS)])
+    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     # Truth
     fact_conf = fact[:,:,0]
     fw = fact[:,:,3] * GRID_WIDTH
@@ -91,8 +98,8 @@ def XY_(fact, pred):
     )
 
 def C_(fact, pred):
-    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(TEXTS)])
-    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(TEXTS)])
+    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     # Truth
     fact_conf = fact[:,:,0]
     fact_cat = fact[:,:,5:]
@@ -130,6 +137,7 @@ def get_model():
     x = input_layer
 
     SEED = 32
+    
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
         SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same')(x)
@@ -145,13 +153,13 @@ def get_model():
         x = MaxPooling2D()(x)
 
     SEED = SEED * 2
-    for i in range(3):
+    for i in range(5):
         SEED = SEED // 2
         x = Conv2D(SEED, 1, padding='same')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
 
-    x = Conv2D(5+len(TEXTS), 1, padding='same')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
+    x = Conv2D(5+len(CLASSES), 1, padding='same')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
     x = BatchNormalization()(x)
     x = Activation('sigmoid')(x)
 
@@ -161,7 +169,13 @@ def get_model():
     return model
 
 
-def generator(batch_size, noise=True):
+def generator(batch_size, test=True):
+
+    if not test:
+        images, labels = read_data(test=False)
+    else:
+        images, labels = read_data(test=True)
+
     while True:
         # Empty batch arrays.
         x_trains = []
@@ -169,7 +183,7 @@ def generator(batch_size, noise=True):
         # Create batch data.
         for i in range(batch_size):
             # image, texts = generate_image(WIDTH, HEIGHT, seeds=random.sample(TEXTS, k=len(TEXTS)))
-            x_data, y_data = load_batch()
+            x_data, y_data = load_image(images, labels)
 
             # if not texts:
             #     image = generate_noise(image)
@@ -181,7 +195,7 @@ def generator(batch_size, noise=True):
             y_trains.append(y_data)
             
         x_trains = np.asarray(x_trains).reshape((batch_size, HEIGHT, WIDTH, CHANNEL))
-        y_trains = np.asarray(y_trains).reshape((batch_size, GRID_Y, GRID_X, 5+len(TEXTS)))
+        y_trains = np.asarray(y_trains).reshape((batch_size, GRID_Y, GRID_X, 5+len(CLASSES)))
         yield x_trains, y_trains
 
 
@@ -203,32 +217,35 @@ def main():
 
     # ---------- Train
 
-    SAMPLE = 1000
+    SAMPLE = 200
     BATCH  = 8
-    EPOCH  = 1000
+    EPOCH  = 10
 
-    x_vals, y_vals = next(generator(32, noise=False))
+    x_vals, y_vals = next(generator(32, test=False))
 
     model.fit_generator(
-        generator=generator(BATCH, noise=False),
+        generator=generator(BATCH, test=False),
         steps_per_epoch=(SAMPLE // BATCH),
         epochs=EPOCH,
         validation_data=(x_vals, y_vals),
         shuffle=True,
         callbacks=[model_checkpoint, history_checkpoint])
 
-    # ---------- Test
+    # # ---------- Test
 
-    x_tests, y_tests = next(generator(10, noise=False))
+    x_tests, y_tests = next(generator(10, test=True))
+    
+    # results = y_tests
     results = model.predict(x_tests)
 
     for r in range(len(results)):
         x_data = x_tests[r]
         y_data = results[r]
-
+        
         image, texts = convert_data_to_image(x_data, y_data)
-        rendered = render_with_texts(image, texts)
-        rendered.save('output_tests/test_render_{:02d}.png'.format(r), 'PNG')
+        rendered = render_with_labels(image, texts)
+        cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),image)
+        # rendered.save('output_tests/test_render_{:02d}.png'.format(r), 'PNG')
 
 
 if __name__ == '__main__':

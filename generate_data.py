@@ -42,7 +42,8 @@ def convert_data_to_image(x_data, y_data):
         for col in range(n_col):
             d = y_data[row, col]
             # If text is available.
-            if d[0] < 0.1:
+            # print(d)
+            if d[0] < 0.5:
                 continue
             # Convert data.
             bx, by, bw, bh = d[1:5]
@@ -50,6 +51,10 @@ def convert_data_to_image(x_data, y_data):
             h = int(bh * HEIGHT)
             x = int(bx * WIDTH - w/2)
             y = int(by * HEIGHT - h)
+            # w = bw
+            # h = bh
+            # x = bx
+            # y = by
             s = CLASSES[np.argmax(d[5:])]
             # # labels
             labels.append([d[0],x,y,w,h,s])
@@ -111,6 +116,8 @@ def read_data(test):
         annotations = [x.split() for x in annotations]
         annotations = np.asarray(annotations)
 
+
+
         y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
 
         for row in range(GRID_X):
@@ -135,14 +142,18 @@ def load_image(images, labels):
     num = random.randrange(0, len(images))
     return images[num], labels[num]
 
-def render_with_labels(image, labels):
+def render_with_labels(image, labels, display):
 
     for label in labels:
+
         cv2.rectangle(image, (label[1],label[2]), (label[1]+label[3],label[2]+label[4]), (0,255,0), 2)
         # cv2.putText(image, label[5], (label[2],label[1]), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 1, cv2.LINE_AA)
-    cv2.imshow('image',image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+
+    if display:
+        cv2.imshow('image',image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
     return 255.0 * image
 
 def main():

@@ -1,0 +1,7 @@
+h5py
+ipython
+numpy
+tensorflow-gpu
+opencv-python
+
+fabric

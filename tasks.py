@@ -3,20 +3,20 @@ import glob
 from fabric import Connection
 from invoke import task
 
-HOST        = 'ec2-54-169-99-110.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-54-254-202-36.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
-ROOT        = 'diagram'
+ROOT        = 'cash'
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
 VENV        = 'virtualenv'
 MODEL       = 'models'
 OUTPUT      = 'output_tests'
 TESTS       = 'test_results'
 LOCAL_FILES = [
-    'test_inputs',
     'common.py',
     'generate_data.py',
     'train.py',
-    'tests.py',
+    'test.py',
+    'data'
 ]
 
 @task
@@ -35,12 +35,12 @@ def setup(ctx):
         ctx.conn.run('mkdir -p {}'.format(OUTPUT))
         ctx.conn.run('mkdir -p {}'.format(TESTS))
         ctx.conn.run('sudo apt install -y dtach')
-        ctx.conn.run('python3 -m venv {}'.format(VENV))
     # PIP
     ctx.conn.put('requirements.in', remote='{}/requirements.in'.format(ROOT))
     with ctx.conn.cd(ROOT):
-        with ctx.conn.prefix('source {}/bin/activate'.format(VENV)):
+        with ctx.conn.prefix('source activate tensorflow2_p36'):
             ctx.conn.run('pip install -U pip')
+            ctx.conn.run('pip install --upgrade pip')
             ctx.conn.run('pip install pip-tools')
             ctx.conn.run('pip-compile --upgrade requirements.in')
             ctx.conn.run('pip-sync')
@@ -56,12 +56,11 @@ def push(ctx, model=''):
 def pull(ctx):
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
-    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=TESTS))
 
 @task(pre=[connect], post=[close])
 def train(ctx):
     with ctx.conn.cd(ROOT):
-        with ctx.conn.prefix('source {}/bin/activate'.format(VENV)):
+        with ctx.conn.prefix('source activate tensorflow2_p36'):
             ctx.conn.run('dtach -A /tmp/{} python train.py'.format(ROOT), pty=True)
 
 @task(pre=[connect], post=[close])
@@ -71,8 +70,8 @@ def resume(ctx):
 @task(pre=[connect], post=[close])
 def test(ctx, model=''):
     with ctx.conn.cd(ROOT):
-        with ctx.conn.prefix('source {}/bin/activate'.format(VENV)):
-            ctx.conn.run('python tests.py {}'.format(model), pty=True)
+        with ctx.conn.prefix('source activate tensorflow2_p36'):
+            ctx.conn.run('python test.py {}'.format(model), pty=True)
 
 @task(pre=[connect], post=[close])
 def clean(ctx):

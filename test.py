@@ -19,22 +19,20 @@ def main(model_path):
 
     # results = y_tests
     results = model.predict(x_tests)
+    print(results)
 
     for r in range(len(results)):
         x_data = x_tests[r]
         y_data = results[r]
 
-        image, texts = convert_data_to_image(x_data, y_data)
-        rendered = render_with_labels(image, texts)
+        image, labels = convert_data_to_image(x_data, y_data)
+        rendered = render_with_labels(image, labels, display = True)
         cv2.imwrite('output_tests/test_render_{:02d}.jpg'.format(r),rendered)
-
-
 
 
 if __name__ == "__main__":
 
     directory = "models/"
-
     folders = [x[0] for x in os.walk(directory)]
     folders.sort()
 

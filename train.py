@@ -137,7 +137,7 @@ def get_model():
     x = input_layer
 
     SEED = 32
-    
+
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
         SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same')(x)
@@ -193,7 +193,7 @@ def generator(batch_size, test=True):
             # Append
             x_trains.append(x_data)
             y_trains.append(y_data)
-            
+
         x_trains = np.asarray(x_trains).reshape((batch_size, HEIGHT, WIDTH, CHANNEL))
         y_trains = np.asarray(y_trains).reshape((batch_size, GRID_Y, GRID_X, 5+len(CLASSES)))
         yield x_trains, y_trains
@@ -234,17 +234,17 @@ def main():
     # # ---------- Test
 
     x_tests, y_tests = next(generator(10, test=True))
-    
+
     # results = y_tests
     results = model.predict(x_tests)
 
     for r in range(len(results)):
         x_data = x_tests[r]
         y_data = results[r]
-        
+
         image, texts = convert_data_to_image(x_data, y_data)
         rendered = render_with_labels(image, texts)
-        cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),image)
+        cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),ren)
         # rendered.save('output_tests/test_render_{:02d}.png'.format(r), 'PNG')
 
 

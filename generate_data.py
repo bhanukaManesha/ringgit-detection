@@ -36,21 +36,19 @@ def convert_data_to_image(x_data, y_data):
 
     # Labels
     labels = []
-    print(y_data.shape)
+
     n_row, n_col, _ = y_data.shape
     for row in range(n_row):
         for col in range(n_col):
             d = y_data[row, col]
-
-            print(d)
             # If text is available.
-            if d[0] < 0.5:
+            if d[0] < 0.1:
                 continue
             # Convert data.
             bx, by, bw, bh = d[1:5]
             w = int(bw * WIDTH)
             h = int(bh * HEIGHT)
-            x = int(bx * WIDTH - w/2) 
+            x = int(bx * WIDTH - w/2)
             y = int(by * HEIGHT - h)
             s = CLASSES[np.argmax(d[5:])]
             # # labels
@@ -77,9 +75,9 @@ def load_image_names(test):
 
 
     image_paths = [x.replace(".jpg","") for x in image_paths]
-    
+
     return image_paths
-    
+
 def read_data(test):
 
     if not test:
@@ -105,10 +103,10 @@ def read_data(test):
             label_path = "data/train/labels/"
         else:
             label_path = "data/test/labels/"
-        
+
         with open(label_path + image_name + ".txt") as f:
             annotations = f.readlines()
-        
+
         annotations = [x.strip() for x in annotations]
         annotations = [x.split() for x in annotations]
         annotations = np.asarray(annotations)
@@ -117,14 +115,14 @@ def read_data(test):
 
         for row in range(GRID_X):
             for col in range(GRID_Y):
-                y_data[row, col, 0] = float(1)
+                y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
                 y_data[row, col, 1:5] = [
-                    float(annotations[row * GRID_X + col][1]),
                     float(annotations[row * GRID_X + col][2]),
                     float(annotations[row * GRID_X + col][3]),
-                    float(annotations[row * GRID_X + col][4])
+                    float(annotations[row * GRID_X + col][4]),
+                    float(annotations[row * GRID_X + col][5])
                 ]
-                y_data[row, col, 5+int(annotations[row * GRID_X + col][0])] = float(1)
+                y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
 
         annotation_data.append(y_data)
 
@@ -145,7 +143,7 @@ def render_with_labels(image, labels):
     cv2.imshow('image',image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    return image
+    return 255.0 * image
 
 def main():
     read_data()

@@ -201,8 +201,18 @@ def generator(batch_size, test=True):
 
 
 
-def main():
-    model = get_model()
+def main(load_model=True):
+
+    if load_model:
+
+        with open(model_path + "/model.json") as json_file:
+            json_config = json_file.read()
+
+        model = keras.models.model_from_json(json_config)
+        model.load_weights(model_path + "/model_weights.h5")
+    else:
+        model = get_model()
+
     print(model.summary())
     print('')
 
@@ -219,8 +229,8 @@ def main():
     # ---------- Train
 
     SAMPLE = 1000
-    BATCH  = 8
-    EPOCH  = 15
+    BATCH  = 32
+    EPOCH  = 1000
 
     x_vals, y_vals = next(generator(32, test=False))
 

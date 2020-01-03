@@ -5,30 +5,6 @@ from common import *
 import cv2
 import tensorflow as tf
 
-
-def convert_image_to_data(image, texts):
-    # Input.
-    x_data = np.array(image.convert('L')) / 255
-    x_data = np.reshape(x_data, [HEIGHT, WIDTH, CHANNEL])
-
-    # Truth.
-    y_data = np.zeros((GRID_Y, GRID_X, 5+len(TEXTS)))
-    for t in texts:
-        x, y ,w, h = t.x, t.y, t.w, t.h
-        cx = (x + w/2) // GRID_WIDTH # CELL x
-        cy = (y + h/2) // GRID_HEIGHT # CELL y
-        bx = (x + w/2) % GRID_WIDTH / GRID_WIDTH # CENTER of box relative to box
-        by = (y + h/2) % GRID_HEIGHT / GRID_HEIGHT # CENTER of box relative to box
-        bw = w / WIDTH # WIDTH of box relative to image
-        bh = h / HEIGHT # HEIGHT of box relative to image
-
-        row, col = int(cy), int(cx) # Swap to row and col.
-        y_data[row, col, 0] = 1
-        y_data[row, col, 1:5] = [bx, by, bw, bh]
-        y_data[row, col, 5+TEXTS.index(t.text)] = 1
-
-    return x_data, y_data
-
 def convert_data_to_image(x_data, y_data):
     # Input.
     image = np.reshape(x_data, [HEIGHT, WIDTH, CHANNEL])
@@ -41,9 +17,9 @@ def convert_data_to_image(x_data, y_data):
     for row in range(n_row):
         for col in range(n_col):
             d = y_data[row, col]
-            # If text is available.
+            # If cash note in the grid cell
             # print(d)
-            if d[0] < 0.5:
+            if d[0] < 0.9:
                 continue
             # Convert data.
             bx, by, bw, bh = d[1:5]
@@ -51,10 +27,6 @@ def convert_data_to_image(x_data, y_data):
             h = int(bh * HEIGHT)
             x = int(bx * WIDTH - w/2)
             y = int(by * HEIGHT - h)
-            # w = bw
-            # h = bh
-            # x = bx
-            # y = by
             s = CLASSES[np.argmax(d[5:])]
             # # labels
             labels.append([d[0],x,y,w,h,s])
@@ -120,16 +92,17 @@ def read_data(test):
 
         y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
 
-        for row in range(GRID_X):
-            for col in range(GRID_Y):
-                y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
-                y_data[row, col, 1:5] = [
-                    float(annotations[row * GRID_X + col][2]),
-                    float(annotations[row * GRID_X + col][3]),
-                    float(annotations[row * GRID_X + col][4]),
-                    float(annotations[row * GRID_X + col][5])
-                ]
-                y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
+        if not test:
+            for row in range(GRID_X):
+                for col in range(GRID_Y):
+                    y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
+                    y_data[row, col, 1:5] = [
+                        float(annotations[row * GRID_X + col][2]),
+                        float(annotations[row * GRID_X + col][3]),
+                        float(annotations[row * GRID_X + col][4]),
+                        float(annotations[row * GRID_X + col][5])
+                    ]
+                    y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
 
         annotation_data.append(y_data)
 

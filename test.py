@@ -19,7 +19,7 @@ def main(model_path):
 
     # results = y_tests
     results = model.predict(x_tests)
-    print(results)
+    # print(results)
 
     for r in range(len(results)):
         x_data = x_tests[r]
@@ -35,5 +35,6 @@ if __name__ == "__main__":
     directory = "models/"
     folders = [x[0] for x in os.walk(directory)]
     folders.sort()
+    print(folders[-1])
 
     main(folders[-1])

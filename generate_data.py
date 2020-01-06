@@ -18,16 +18,27 @@ def convert_data_to_image(x_data, y_data):
         for col in range(n_col):
             d = y_data[row, col]
             # If cash note in the grid cell
-            # print(d)
             if d[0] < 0.9:
                 continue
+
             # Convert data.
             bx, by, bw, bh = d[1:5]
             w = int(bw * WIDTH)
             h = int(bh * HEIGHT)
-            x = int(bx * WIDTH - w/2)
-            y = int(by * HEIGHT - h)
+            x = int(bx * WIDTH - GRID_WIDTH/2)
+            y = int(by * HEIGHT - GRID_HEIGHT/2)
+
+
+            # w = bw * WIDTH
+            # h = bh * HEIGHT
+            # x = bx * WIDTH - w/2
+            # y = by * HEIGHT - h/2
+
+
+
             s = CLASSES[np.argmax(d[5:])]
+
+            print([d[0],x,y,w,h,s])
             # # labels
             labels.append([d[0],x,y,w,h,s])
 
@@ -84,6 +95,7 @@ def read_data(test):
         with open(label_path + image_name + ".txt") as f:
             annotations = f.readlines()
 
+
         annotations = [x.strip() for x in annotations]
         annotations = [x.split() for x in annotations]
         annotations = np.asarray(annotations)
@@ -92,17 +104,17 @@ def read_data(test):
 
         y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
 
-        if not test:
-            for row in range(GRID_X):
-                for col in range(GRID_Y):
-                    y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
-                    y_data[row, col, 1:5] = [
-                        float(annotations[row * GRID_X + col][2]),
-                        float(annotations[row * GRID_X + col][3]),
-                        float(annotations[row * GRID_X + col][4]),
-                        float(annotations[row * GRID_X + col][5])
-                    ]
-                    y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
+
+        for row in range(GRID_X):
+            for col in range(GRID_Y):
+                y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
+                y_data[row, col, 1:5] = [
+                    float(annotations[row * GRID_X + col][2]),
+                    float(annotations[row * GRID_X + col][3]),
+                    float(annotations[row * GRID_X + col][4]),
+                    float(annotations[row * GRID_X + col][5])
+                ]
+                y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
 
         annotation_data.append(y_data)
 

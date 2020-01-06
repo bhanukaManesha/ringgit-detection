@@ -177,6 +177,7 @@ def generator(batch_size, test=True):
     else:
         images, labels = read_data(test=True)
 
+
     while True:
         # Empty batch arrays.
         x_trains = []
@@ -195,13 +196,15 @@ def generator(batch_size, test=True):
             x_trains.append(x_data)
             y_trains.append(y_data)
 
+
+
         x_trains = np.asarray(x_trains).reshape((batch_size, HEIGHT, WIDTH, CHANNEL))
         y_trains = np.asarray(y_trains).reshape((batch_size, GRID_Y, GRID_X, 5+len(CLASSES)))
         yield x_trains, y_trains
 
 
 
-def main(load_model=True):
+def main(model_path, load_model=True):
 
     if load_model:
 
@@ -210,6 +213,7 @@ def main(load_model=True):
 
         model = keras.models.model_from_json(json_config)
         model.load_weights(model_path + "/model_weights.h5")
+        model.compile(optimizer='adam', loss=loss, metrics=[P_, XY_, C_])
     else:
         model = get_model()
 
@@ -228,8 +232,8 @@ def main(load_model=True):
 
     # ---------- Train
 
-    SAMPLE = 1000
-    BATCH  = 32
+    SAMPLE = 1180
+    BATCH  = 16
     EPOCH  = 1000
 
     x_vals, y_vals = next(generator(32, test=False))
@@ -260,4 +264,7 @@ def main(load_model=True):
 
 
 if __name__ == '__main__':
-    main()
+    directory = "models/"
+    folders = [x[0] for x in os.walk(directory)]
+    folders.sort()
+    main(model_path = folders[-1], load_model=True)

@@ -232,7 +232,7 @@ def main(model_path, load_model=True):
 
     # ---------- Train
 
-    SAMPLE = 1180
+    SAMPLE = 4080
     BATCH  = 16
     EPOCH  = 1000
 
@@ -259,7 +259,7 @@ def main(model_path, load_model=True):
 
         image, texts = convert_data_to_image(x_data, y_data)
         rendered = render_with_labels(image, texts, display = False)
-        cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
+        cv2.imwrite('output_tests/test_render_{:02d}.jpg'.format(r),rendered)
         # rendered.save('output_tests/test_render_{:02d}.png'.format(r), 'PNG')
 
 
@@ -267,4 +267,4 @@ if __name__ == '__main__':
     directory = "models/"
     folders = [x[0] for x in os.walk(directory)]
     folders.sort()
-    main(model_path = folders[-1], load_model=True)
+    main(model_path = folders[-1], load_model=False)

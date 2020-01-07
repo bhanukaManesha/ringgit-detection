@@ -5,6 +5,8 @@ from common import *
 import cv2
 import tensorflow as tf
 
+
+
 def convert_data_to_image(x_data, y_data):
     # Input.
     image = np.reshape(x_data, [HEIGHT, WIDTH, CHANNEL])
@@ -27,13 +29,6 @@ def convert_data_to_image(x_data, y_data):
             h = int(bh * HEIGHT)
             x = int(bx * WIDTH - GRID_WIDTH/2)
             y = int(by * HEIGHT - GRID_HEIGHT/2)
-
-
-            # w = bw * WIDTH
-            # h = bh * HEIGHT
-            # x = bx * WIDTH - w/2
-            # y = by * HEIGHT - h/2
-
 
 
             s = CLASSES[np.argmax(d[5:])]
@@ -128,11 +123,18 @@ def load_image(images, labels):
     return images[num], labels[num]
 
 def render_with_labels(image, labels, display):
+    colors = {
+        "RM50" : (0, 255, 0),
+        "RM1" : (255, 0, 0),
+        "RM10" : (0, 255, 255),
+        "RM20" : (0, 0, 255)
+    }
 
     for label in labels:
 
-        cv2.rectangle(image, (label[1],label[2]), (label[1]+label[3],label[2]+label[4]), (0,255,0), 2)
-        # cv2.putText(image, label[5], (label[2],label[1]), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 1, cv2.LINE_AA)
+        cv2.rectangle(image, (label[1],label[2]), (label[1]+label[3],label[2]+label[4]), colors[label[5]], 2)
+        # cv2.putText(image, label[5], (label[2],label[1]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 1, cv2.LINE_AA)
+        cv2.putText(image, label[5], (label[1], label[2]-1), cv2.FONT_HERSHEY_SIMPLEX, 0.3, colors[label[5]], 1)
 
     if display:
         cv2.imshow('image',image)

@@ -21,8 +21,8 @@ def main(model_path):
 
     x_tests, y_tests = next(generator(10, test=True))
 
-    # results = y_tests
-    results = model.predict(x_tests)
+    results = y_tests
+    # results = model.predict(x_tests)
     # print(results)
 
     for r in range(len(results)):

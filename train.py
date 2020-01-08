@@ -232,11 +232,11 @@ def main(model_path, load_model=True):
 
     # ---------- Train
 
-    SAMPLE = 4080
+    SAMPLE = 7680
     BATCH  = 16
     EPOCH  = 1000
 
-    x_vals, y_vals = next(generator(32, test=False))
+    x_vals, y_vals = next(generator(64, test=False))
 
     model.fit_generator(
         generator=generator(BATCH, test=False),
@@ -267,4 +267,4 @@ if __name__ == '__main__':
     directory = "models/"
     folders = [x[0] for x in os.walk(directory)]
     folders.sort()
-    main(model_path = folders[-1], load_model=False)
+    main(model_path = folders[-1], load_model=True)

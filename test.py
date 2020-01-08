@@ -5,15 +5,19 @@ from train import *
 from generate_data import *
 import os
 
+def load_model(model_path):
 
-def main(model_path):
-
-    print(model_path)
     with open(model_path + "/model.json") as json_file:
         json_config = json_file.read()
 
     model = keras.models.model_from_json(json_config)
     model.load_weights(model_path + "/model_weights.h5")
+
+    return model
+
+def main(model_path):
+
+    model = load_model(model_path)
 
     x_tests, y_tests = next(generator(10, test=True))
 

@@ -232,8 +232,8 @@ def main(model_path, load_model=True):
 
     # ---------- Train
 
-    SAMPLE = 7680
-    BATCH  = 16
+    SAMPLE = 1600
+    BATCH  = 128
     EPOCH  = 1000
 
     x_vals, y_vals = next(generator(64, test=False))

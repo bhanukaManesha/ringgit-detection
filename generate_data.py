@@ -28,8 +28,8 @@ def convert_data_to_image(x_data, y_data):
             bx, by, bw, bh = d[1:5]
             w = int(bw * WIDTH)
             h = int(bh * HEIGHT)
-            x = int(col * GRID_WIDTH + bx * GRID_WIDTH)
-            y = int(row * GRID_HEIGHT + by * GRID_HEIGHT)
+            x = int(col * GRID_WIDTH + (bx * WIDTH - w/2))
+            y = int(row * GRID_HEIGHT + (by * HEIGHT - h/2))
 
 
             s = CLASSES[np.argmax(d[5:])]

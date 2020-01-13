@@ -23,7 +23,6 @@ def main(model_path):
 
     # results = y_tests
     results = model.predict(x_tests)
-    # print(results)
 
     for r in range(len(results)):
         x_data = x_tests[r]

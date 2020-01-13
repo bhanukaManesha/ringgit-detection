@@ -15,7 +15,7 @@ import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, Callback
 from tensorflow import keras
 from tensorflow.keras.metrics import binary_accuracy, categorical_accuracy
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import RMSprop,SGD
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D
 from tensorflow.keras.backend import *
@@ -213,7 +213,9 @@ def main(model_path, load_model=True):
 
         model = keras.models.model_from_json(json_config)
         model.load_weights(model_path + "/model_weights.h5")
-        model.compile(optimizer='adam', loss=loss, metrics=[P_, XY_, C_])
+
+        optimizer = SGD(lr=0.001)
+        model.compile(optimizer="adam", loss=loss, metrics=[P_, XY_, C_])
     else:
         model = get_model()
 
@@ -232,11 +234,11 @@ def main(model_path, load_model=True):
 
     # ---------- Train
 
-    SAMPLE = 1600
-    BATCH  = 128
+    SAMPLE = 9600
+    BATCH  = 32
     EPOCH  = 1000
 
-    x_vals, y_vals = next(generator(64, test=False))
+    x_vals, y_vals = next(generator(128, test=False))
 
     model.fit_generator(
         generator=generator(BATCH, test=False),
@@ -267,4 +269,4 @@ if __name__ == '__main__':
     directory = "models/"
     folders = [x[0] for x in os.walk(directory)]
     folders.sort()
-    main(model_path = folders[-1], load_model=True)
+    main(model_path = folders[-1], load_model=False)

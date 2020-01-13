@@ -21,15 +21,15 @@ def convert_data_to_image(x_data, y_data):
             d = y_data[row, col]
             # If cash note in the grid cell
 
-            if d[0] < 0.95:
+            if d[0] < 0.8:
                 continue
 
             # Convert data.
             bx, by, bw, bh = d[1:5]
             w = int(bw * WIDTH)
             h = int(bh * HEIGHT)
-            x = int(col * GRID_WIDTH + (bx * WIDTH - w/2))
-            y = int(row * GRID_HEIGHT + (by * HEIGHT - h/2))
+            x = int(col * GRID_WIDTH + (bx * GRID_WIDTH - w/2))
+            y = int(row * GRID_HEIGHT + (by * GRID_HEIGHT - h/2))
 
 
             s = CLASSES[np.argmax(d[5:])]
@@ -125,10 +125,11 @@ def load_image(images, labels):
 
 def render_with_labels(image, labels, display):
     colors = {
-        "RM50" : (0, 255, 0),
-        "RM1" : (255, 0, 0),
-        "RM10" : (0, 255, 255),
-        "RM20" : (0, 0, 255)
+        "RM50" : (0,128,0),
+        "RM1" : (30,144,255),
+        "RM10" : (220,20,60),
+        "RM20" : (255,165,0),
+        "RM100" : (221,160,221),
     }
 
     for label in labels:
@@ -146,8 +147,6 @@ def render_with_labels(image, labels, display):
 
 def main():
     read_data()
-
-
 
 if __name__ == '__main__':
     main()

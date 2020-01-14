@@ -137,24 +137,24 @@ def get_model():
     input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
     x = input_layer
 
-    SEED = 32
+    SEED = 8
 
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
         SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        for _ in range(i):
-            x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
-            x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
+        # for _ in range(i):
+        #     x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
+        #     x = BatchNormalization()(x)
+        #     x = Activation('relu')(x)
+        #     x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
+        #     x = BatchNormalization()(x)
+        #     x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
     SEED = SEED * 2
-    for i in range(5):
+    for i in range(2):
         SEED = SEED // 2
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
@@ -187,16 +187,9 @@ def generator(batch_size, test=True):
             # image, texts = generate_image(WIDTH, HEIGHT, seeds=random.sample(TEXTS, k=len(TEXTS)))
             x_data, y_data = load_image(images, labels)
 
-            # if not texts:
-            #     image = generate_noise(image)
-            # x_data, y_data = convert_image_to_data(image, texts)
-
-
             # Append
             x_trains.append(x_data)
             y_trains.append(y_data)
-
-
 
         x_trains = np.asarray(x_trains).reshape((batch_size, HEIGHT, WIDTH, CHANNEL))
         y_trains = np.asarray(y_trains).reshape((batch_size, GRID_Y, GRID_X, 5+len(CLASSES)))
@@ -214,7 +207,7 @@ def main(model_path, load_model=True):
         model = keras.models.model_from_json(json_config)
         model.load_weights(model_path + "/model_weights.h5")
 
-        optimizer = SGD(lr=0.001)
+        # optimizer = SGD(lr=0.001)
         model.compile(optimizer="adam", loss=loss, metrics=[P_, XY_, C_])
     else:
         model = get_model()
@@ -234,9 +227,9 @@ def main(model_path, load_model=True):
 
     # ---------- Train
 
-    SAMPLE = 9600
-    BATCH  = 32
-    EPOCH  = 1000
+    SAMPLE = 10368 
+    BATCH  = 16
+    EPOCH  = 100
 
     x_vals, y_vals = next(generator(128, test=False))
 

@@ -1,4 +1,5 @@
-CLASSES       = ["RM50","RM1","RM10","RM20","RM100"]
+CLASSES       = ["RM50","RM100"]
+# CLASSES       = ["RM50","RM1","RM10","RM20","RM100"]
 CHANNEL     = 3
 
 GRID_WIDTH  = int(16) # The size of 1 cell.

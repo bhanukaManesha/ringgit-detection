@@ -21,7 +21,7 @@ def convert_data_to_image(x_data, y_data):
             d = y_data[row, col]
             # If cash note in the grid cell
 
-            if d[0] < 0.8:
+            if d[0] < 0.9:
                 continue
 
             # Convert data.
@@ -96,10 +96,7 @@ def read_data(test):
         annotations = [x.split() for x in annotations]
         annotations = np.asarray(annotations)
 
-
-
         y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
-
 
         for row in range(GRID_X):
             for col in range(GRID_Y):
@@ -126,10 +123,10 @@ def load_image(images, labels):
 def render_with_labels(image, labels, display):
     colors = {
         "RM50" : (0,128,0),
-        "RM1" : (30,144,255),
-        "RM10" : (220,20,60),
-        "RM20" : (255,165,0),
-        "RM100" : (221,160,221),
+        "RM1" : (255,0,0),
+        "RM10" : (0,0,255),
+        "RM20" : (0,128,255),
+        "RM100" : (255,255,255),
     }
 
     for label in labels:

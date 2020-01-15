@@ -48,7 +48,7 @@ def loss(fact, pred):
 
     # --- Confident loss
     conf_loss = tf.square(fact_conf - pred_conf)
-    conf_loss = (mask_obj * conf_loss) + (mask_noobj * conf_loss)
+    # conf_loss = (mask_obj * conf_loss) + (mask_noobj * conf_loss)
     # print('conf_loss.shape: ', conf_loss.shape)
 
     # --- Box loss
@@ -62,7 +62,7 @@ def loss(fact, pred):
     # print('cat_loss.shape: ', cat_loss.shape)
 
     # --- Total loss
-    return sum(conf_loss + box_loss + cat_loss, axis=-1)
+    return sum(conf_loss + box_loss*4 + cat_loss/len(CLASSES), axis=-1)
 
 def P_(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -153,6 +153,7 @@ def get_model():
         #     x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
+    
     SEED = SEED * 2
     for i in range(2):
         SEED = SEED // 2
@@ -227,7 +228,7 @@ def main(model_path, load_model=True):
 
     # ---------- Train
 
-    SAMPLE = 10368 
+    SAMPLE = 5000 
     BATCH  = 16
     EPOCH  = 100
 

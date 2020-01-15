@@ -35,7 +35,7 @@ def main():
 
     # Create a VideoCapture object and read from input file
     # If the input is the camera, pass 0 instead of the video file name
-    cap = cv2.VideoCapture('demo_videos/1.MOV')
+    cap = cv2.VideoCapture('demo_videos/14.MOV')
 
     # Check if camera opened successfully
     if (cap.isOpened()== False):
@@ -47,7 +47,7 @@ def main():
         ret, frame = cap.read()
         if ret == True:
 
-            frame = resize_image(frame, 128, 128, 3)
+            frame = resize_image(frame, 512, 512, 3)
 
             x_frame = np.expand_dims(frame, axis=0)
             # print("input.shape : "  + str(x_frame.shape))

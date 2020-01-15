@@ -76,7 +76,14 @@ def read_data(test):
     image_data = []
     annotation_data = []
 
+    LIMIT = 5000
+    count = 0
+
     for image_name in IMAGE_NAMES:
+        if count >= LIMIT:
+            break
+        count+=1
+
         image_type = ".jpg"
 
         image = cv2.imread(image_path + image_name + image_type).astype(np.float32)/255.0

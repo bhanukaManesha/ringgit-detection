@@ -76,13 +76,8 @@ def read_data(test):
     image_data = []
     annotation_data = []
 
-    LIMIT = 5000
-    count = 0
 
     for image_name in IMAGE_NAMES:
-        if count >= LIMIT:
-            break
-        count+=1
 
         image_type = ".jpg"
 

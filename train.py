@@ -137,20 +137,20 @@ def get_model():
     input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
     x = input_layer
 
-    SEED = 8
+    SEED = 32
 
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
         SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        # for _ in range(i):
-        #     x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-        #     x = BatchNormalization()(x)
-        #     x = Activation('relu')(x)
-        #     x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-        #     x = BatchNormalization()(x)
-        #     x = Activation('relu')(x)
+        for _ in range(i):
+            x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
+            x = BatchNormalization()(x)
+            x = Activation('relu')(x)
+            x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
+            x = BatchNormalization()(x)
+            x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
     
@@ -166,7 +166,8 @@ def get_model():
     x = Activation('sigmoid')(x)
 
     model = Model(input_layer, x)
-    # model.compile(optimizer=R]Adam(), loss=loss, metrics=[P_, XY_, C_])
+    # model.compile(optimizer=Adam(), loss=loss, metrics=[P_, XY_, C_])
+    # rmsprop = RMSprop(learning_rate=0.01, rho=0.9)
     model.compile(optimizer='adam', loss=loss, metrics=[P_, XY_, C_])
     return model
 
@@ -228,7 +229,7 @@ def main(model_path, load_model=True):
 
     # ---------- Train
 
-    SAMPLE = 5000 
+    SAMPLE = 10368 
     BATCH  = 16
     EPOCH  = 100
 

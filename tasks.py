@@ -3,7 +3,7 @@ import glob
 from fabric import Connection
 from invoke import task
 
-HOST        = 'ec2-54-169-229-117.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-54-169-107-229.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
@@ -16,7 +16,7 @@ LOCAL_FILES = [
     'generate_data.py',
     'train.py',
     'test.py',
-    'data.tar',
+    'data',
     'models'
 ]
 
@@ -56,13 +56,11 @@ def setup(ctx):
             ctx.conn.run('pip-sync')
 
 @task
-def initialpush(ctx, model='',pre=[connect], post=[close]):
+def initialpush(ctx, model=''):
     ctx.run('rsync -rv --progress {files} {remote}'.format(files=' '.join(LOCAL_FILES), remote=REMOTE))
     model = sorted([fp for fp in glob.glob('models/*') if model and model in fp], reverse=True)
     if model:
         ctx.run('rsync -rv {folder}/ {remote}/{folder}'.format(remote=REMOTE, folder=model[0]))
-    with ctx.conn.cd(ROOT):
-        ctx.conn.run('tar xvf data.tar')
 
 @task
 def push(ctx, model=''):

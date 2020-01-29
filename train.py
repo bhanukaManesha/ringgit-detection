@@ -62,7 +62,7 @@ def loss(fact, pred):
     # print('cat_loss.shape: ', cat_loss.shape)
 
     # --- Total loss
-    return sum(conf_loss + box_loss*4 + cat_loss/len(CLASSES), axis=-1)
+    return sum(conf_loss + box_loss + cat_loss, axis=-1)
 
 def P_(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -114,7 +114,6 @@ def C_(fact, pred):
         sum(categorical_accuracy(fact_cat, pred_cat) * fact_conf) / nonzero_count
     )
 
-
 class HistoryCheckpoint(keras.callbacks.Callback):
     def __init__(self, folder):
         self.folder = folder
@@ -142,14 +141,14 @@ def get_model():
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
         SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
-        x = BatchNormalization()(x)
+        # x = BatchNormalization()(x)
         x = Activation('relu')(x)
         for _ in range(i):
             x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-            x = BatchNormalization()(x)
+            # x = BatchNormalization()(x)
             x = Activation('relu')(x)
             x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-            x = BatchNormalization()(x)
+            # x = BatchNormalization()(x)
             x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
@@ -158,11 +157,11 @@ def get_model():
     for i in range(2):
         SEED = SEED // 2
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
-        x = BatchNormalization()(x)
+        # x = BatchNormalization()(x)
         x = Activation('relu')(x)
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
-    x = BatchNormalization()(x)
+    # x = BatchNormalization()(x)
     x = Activation('sigmoid')(x)
 
     model = Model(input_layer, x)
@@ -172,12 +171,16 @@ def get_model():
     return model
 
 
-def generator(batch_size, test=True):
+def generator(batch_size, mode="train"):
 
-    if not test:
-        images, labels = read_data(test=False)
+    if mode == "train":
+        images, labels = read_data(mode=mode)
+    elif mode == "test":
+        images, labels = read_data(mode=mode)
+    elif mode == "valid":
+        images, labels = read_data(mode=mode)
     else:
-        images, labels = read_data(test=True)
+        print("Invalid Mode")
 
 
     while True:
@@ -229,14 +232,14 @@ def main(model_path, load_model=True):
 
     # ---------- Train
 
-    SAMPLE = 10368 
+    SAMPLE = 29124
     BATCH  = 16
-    EPOCH  = 100
+    EPOCH  = 500
 
-    x_vals, y_vals = next(generator(128, test=False))
+    x_vals, y_vals = next(generator(SAMPLE, mode="valid"))
 
     model.fit_generator(
-        generator=generator(BATCH, test=False),
+        generator=generator(BATCH, mode="train"),
         steps_per_epoch=(SAMPLE // BATCH),
         epochs=EPOCH,
         validation_data=(x_vals, y_vals),
@@ -245,7 +248,9 @@ def main(model_path, load_model=True):
 
     # # ---------- Test
 
-    x_tests, y_tests = next(generator(10, test=True))
+    # x_tests, y_tests = next(generator(10, mode="test"))
+    x_tests = x_vals
+    y_tests = y_vals
 
     # results = y_tests
     results = model.predict(x_tests)
@@ -256,7 +261,7 @@ def main(model_path, load_model=True):
 
         image, texts = convert_data_to_image(x_data, y_data)
         rendered = render_with_labels(image, texts, display = False)
-        cv2.imwrite('output_tests/test_render_{:02d}.jpg'.format(r),rendered)
+        cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
         # rendered.save('output_tests/test_render_{:02d}.png'.format(r), 'PNG')
 
 

@@ -19,7 +19,7 @@ def main(model_path):
 
     model = load_model(model_path)
 
-    x_tests, y_tests = next(generator(10, test=True))
+    x_tests, y_tests = next(generator(10, mode="train"))
 
     # results = y_tests
     results = model.predict(x_tests)
@@ -30,7 +30,7 @@ def main(model_path):
 
         image, labels = convert_data_to_image(x_data, y_data)
         rendered = render_with_labels(image, labels, display = True)
-        cv2.imwrite('output_tests/test_render_{:02d}.jpg'.format(r),rendered)
+        cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
 
 
 if __name__ == "__main__":

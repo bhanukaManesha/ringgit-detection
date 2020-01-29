@@ -5,12 +5,27 @@ from common import *
 import cv2
 import tensorflow as tf
 
+def resize_image(image, height, width, channels):
+
+    o_height, o_width, _ = image.shape
+
+    resized = np.zeros((height, width, channels))
+
+    scale_factor = o_height / width
+
+    resized_width = int(o_width/scale_factor)
+    resized_height = int(o_height/scale_factor)
+
+    res = cv2.resize(image, dsize=(resized_width,resized_height), interpolation=cv2.INTER_CUBIC)
+
+    resized = res[0:height, 0:width, :]
+
+    return resized/255.0
 
 
 def convert_data_to_image(x_data, y_data):
     # Input.
     image = np.reshape(x_data, [HEIGHT, WIDTH, CHANNEL])
-    # image = Image.fromarray(np.uint8(x_data * 255))
 
     # Labels
     labels = []
@@ -20,8 +35,7 @@ def convert_data_to_image(x_data, y_data):
         for col in range(n_col):
             d = y_data[row, col]
             # If cash note in the grid cell
-
-            if d[0] < 0.9:
+            if d[0] < 0.8:
                 continue
 
             # Convert data.
@@ -31,46 +45,49 @@ def convert_data_to_image(x_data, y_data):
             x = int(col * GRID_WIDTH + (bx * GRID_WIDTH - w/2))
             y = int(row * GRID_HEIGHT + (by * GRID_HEIGHT - h/2))
 
-
             s = CLASSES[np.argmax(d[5:])]
 
             print([d[0],x,y,w,h,s])
-            # # labels
+            # labels
             labels.append([d[0],x,y,w,h,s])
 
     return image, labels
 
-def load_image_names(test):
+def load_image_names(mode):
 
-    if not test:
+    if mode == "train":
         filename = "data/train/train.txt"
-    else:
+    elif mode == "test":
         filename = "data/test/test.txt"
-
+    elif mode == "valid":
+        filename = "data/validation/validation.txt"
 
     with open(filename) as f:
         image_paths = f.readlines()
     image_paths = [x.strip() for x in image_paths]
 
-    if not test:
+    if mode == "train":
         image_paths = [x.replace("data/train/images/","") for x in image_paths]
-    else:
+    elif mode == "test":
         image_paths = [x.replace("data/test/images/","") for x in image_paths]
-
+    elif mode == "valid":
+        image_paths = [x.replace("data/validation/images/","") for x in image_paths]
 
     image_paths = [x.replace(".jpg","") for x in image_paths]
 
+
     return image_paths
 
-def read_data(test):
+def read_data(mode):
 
-    if not test:
+    if mode == "train":
         image_path = "data/train/images/"
-    else:
+    elif mode == "test":
         image_path = "data/test/images/"
+    elif mode == "valid":
+        image_path = "data/validation/images/"
 
-
-    IMAGE_NAMES = load_image_names(test=test)
+    IMAGE_NAMES = load_image_names(mode=mode)
     print('total.images: ', len(IMAGE_NAMES))
 
     image_data = []
@@ -81,14 +98,17 @@ def read_data(test):
 
         image_type = ".jpg"
 
+        # print(image_path + image_name + image_type)
         image = cv2.imread(image_path + image_name + image_type).astype(np.float32)/255.0
 
         image_data.append(image)
-
-        if not test:
+        
+        if mode == "train":
             label_path = "data/train/labels/"
-        else:
+        elif mode == "test":
             label_path = "data/test/labels/"
+        elif mode == "valid":
+            label_path = "data/validation/labels/"
 
         with open(label_path + image_name + ".txt") as f:
             annotations = f.readlines()

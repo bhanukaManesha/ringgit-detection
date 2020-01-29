@@ -4,22 +4,22 @@ from test import load_model
 import os
 from generate_data import *
 
-def resize_image(image, height, width, channels):
+# def resize_image(image, height, width, channels):
 
-    o_height, o_width, _ = image.shape
+#     o_height, o_width, _ = image.shape
 
-    resized = np.zeros((height, width, channels))
+#     resized = np.zeros((height, width, channels))
 
-    scale_factor = o_height / width
+#     scale_factor = o_height / width
 
-    resized_width = int(o_width/scale_factor)
-    resized_height = int(o_height/scale_factor)
+#     resized_width = int(o_width/scale_factor)
+#     resized_height = int(o_height/scale_factor)
 
-    res = cv2.resize(image, dsize=(resized_width,resized_height), interpolation=cv2.INTER_CUBIC)
+#     res = cv2.resize(image, dsize=(resized_width,resized_height), interpolation=cv2.INTER_CUBIC)
 
-    resized = res[0:height, 0:width, :]
+#     resized = res[0:height, 0:width, :]
 
-    return resized/255.0
+#     return resized/255.0
 
 
 
@@ -35,11 +35,14 @@ def main():
 
     # Create a VideoCapture object and read from input file
     # If the input is the camera, pass 0 instead of the video file name
-    cap = cv2.VideoCapture('demo_videos/13.MOV')
+    cap = cv2.VideoCapture('demo_videos/20.MOV')
 
     # Check if camera opened successfully
     if (cap.isOpened()== False):
         print("Error opening video stream or file")
+
+    fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+    out = cv2.VideoWriter('output.mp4',fourcc, 20.0, (1080,1080))
 
     # Read until video is completed
     while(cap.isOpened()):
@@ -47,24 +50,31 @@ def main():
         ret, frame = cap.read()
         if ret == True:
 
-            frame = resize_image(frame, 64, 64, 3)
+            ori_frame = frame[:1080,:1080,:]
+            ori_x_frame = np.expand_dims(ori_frame, axis=0)
 
-            x_frame = np.expand_dims(frame, axis=0)
+            small_frame = resize_image(ori_frame, 64, 64, 3)
+
+            x_frame = np.expand_dims(small_frame, axis=0)
             # print("input.shape : "  + str(x_frame.shape))
 
             results = model.predict(x_frame)
 
             for r in range(len(results)):
-                x_data = x_frame[r]
+                x_data = ori_x_frame[r]/255.0
                 y_data = results[r]
 
                 image, labels = convert_data_to_image(x_data, y_data)
                 rendered = render_with_labels(image, labels, display = False)
                 # cv2.imwrite('output_tests/test_render_{:02d}.jpg'.format(r),rendered)
 
+                rendered = np.uint8(rendered)
 
                 # Display the resulting frame
-                cv2.imshow('Frame',rendered/255.0)
+                cv2.imshow('Frame',rendered)
+                
+                # write the output frame to file
+                out.write(rendered)
 
                 # Press Q on keyboard to  exit
                 if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -76,6 +86,7 @@ def main():
 
     # When everything done, release the video capture object
     cap.release()
+    out.release()
 
     # Closes all the frames
     cv2.destroyAllWindows()

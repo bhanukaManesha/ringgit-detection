@@ -3,7 +3,7 @@ import glob
 from fabric import Connection
 from invoke import task
 
-HOST        = 'ec2-54-169-107-229.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-3-0-183-54.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
@@ -15,9 +15,11 @@ LOCAL_FILES = [
     'common.py',
     'generate_data.py',
     'train.py',
+    'train2.py',
     'test.py',
+    'models',
     'data',
-    'models'
+    'test_data'
 ]
 
 PYTHON_SCRIPTS = [
@@ -25,6 +27,8 @@ PYTHON_SCRIPTS = [
     'generate_data.py',
     'train.py',
     'test.py',
+    'train2.py',
+    'train.py'
 ]
 
 

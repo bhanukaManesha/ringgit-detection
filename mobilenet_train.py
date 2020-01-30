@@ -12,6 +12,7 @@ import numpy as np
 import cv2
 import json
 import glob
+import ssl
 
 import tensorflow as tf
 
@@ -23,7 +24,10 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout
 from tensorflow.keras.backend import *
 
+from tensorflow.keras.applications import vgg16,mobilenet_v2
+
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def loss(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -75,7 +79,7 @@ def P_(fact, pred):
     # Prediction
     pred_conf = pred[:,:,0]
     # PROBABILITY
-    return binary_accuracy(fact_conf, pred_conf,threshold=0.8)
+    return binary_accuracy(fact_conf, pred_conf)
 
 def XY_(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -133,54 +137,36 @@ class HistoryCheckpoint(keras.callbacks.Callback):
         with open('{}/history.txt'.format(self.folder), 'a') as f:
             f.write(h + '\n')
 
-
-
 def get_model():
-    input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
-    x = input_layer
 
-    SEED = 16
-    for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
-        SEED = SEED * 2
-        x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
-        x = BatchNormalization()(x)
-        x = Activation('relu')(x)
-        # x = Dropout(0.2)(x)
-        for _ in range(i):
-            x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
-            # x = Dropout(0.2)(x)
+    input_shape = (WIDTH, HEIGHT, CHANNEL)
 
-            x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
-            # x = Dropout(0.2)(x)
-        x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
+    mobilenet = mobilenet_v2.MobileNetV2(include_top=False, weights='imagenet', input_shape=input_shape)
 
-    
-    SEED = SEED * 2
+    # Set layers to not trainable
+    for layer in mobilenet.layers:
+        layer.trainable = False
+
+    x = mobilenet.layers[-1].output
+
+    SEED = 1280
     for i in range(2):
         SEED = SEED // 2
-        x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
+        x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) 
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        x = Dropout(0.5)(x)
+        x = Dropout(0.2)(x)
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
-    # x = BatchNormalization()(x)
     x = Activation('sigmoid')(x)
 
-    model = Model(input_layer, x)
-    # model.compile(optimizer=Adam(), loss=loss, metrics=[P_, XY_, C_])
-    # rmsprop = RMSprop(learning_rate=0.01, rho=0.9)
-    # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(optimizer='adam', loss=loss, metrics=[P_, XY_, C_])
-    return model
+    mobilenet_model = Model(mobilenet.input, x)
+    mobilenet_model.compile(optimizer='adam', loss=loss, metrics=[P_, XY_, C_])
+    return mobilenet_model
 
 def load_images_from_directory(path):
 
-    image_paths = glob.glob(path + "images/*.jpeg")
+    image_paths = glob.glob(path + "images/*.jpg")
     label_paths = glob.glob(path + "labels/*.txt")
 
     image_paths.sort()
@@ -229,7 +215,6 @@ def main(model_path):
     print(model.summary())
     print('')
 
-
     # --- Setup.
 
     now = datetime.now()
@@ -240,12 +225,10 @@ def main(model_path):
     model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
     # ---------- Train
+
+    SAMPLE = 100
     BATCH  = 8
-    EPOCH  = 500
-
-
-    # print()
-    # path = "test_data/"
+    EPOCH  = 300
 
     t_1_x_train,t_1_y_train = load_images_from_directory("test_data/t_train/")
     # t_back_x_train,t_back_y_train = load_images_from_directory("test_data/t_back/")
@@ -287,11 +270,9 @@ def main(model_path):
     directory = "output_tests"
     if not os.path.exists(directory):
         os.makedirs(directory)
-
         os.makedirs(directory + "/train")
         os.makedirs(directory + "/valid")
     
-
     # Plot training
     results = model.predict(x_train)
     # results = y_train

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from common import *
@@ -12,6 +11,7 @@ import numpy as np
 import cv2
 import json
 import glob
+import ssl
 
 import tensorflow as tf
 
@@ -23,7 +23,10 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout
 from tensorflow.keras.backend import *
 
+from tensorflow.keras.applications import vgg16,mobilenet_v2
+
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def loss(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -75,7 +78,7 @@ def P_(fact, pred):
     # Prediction
     pred_conf = pred[:,:,0]
     # PROBABILITY
-    return binary_accuracy(fact_conf, pred_conf,threshold=0.8)
+    return binary_accuracy(fact_conf, pred_conf)
 
 def XY_(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -136,51 +139,35 @@ class HistoryCheckpoint(keras.callbacks.Callback):
 
 
 def get_model():
-    input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
-    x = input_layer
 
-    SEED = 16
-    for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
-        SEED = SEED * 2
-        x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
-        x = BatchNormalization()(x)
-        x = Activation('relu')(x)
-        # x = Dropout(0.2)(x)
-        for _ in range(i):
-            x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
-            # x = Dropout(0.2)(x)
+    input_shape = (WIDTH, HEIGHT, CHANNEL)
 
-            x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
-            # x = Dropout(0.2)(x)
-        x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
+    vgg = vgg16.VGG16(include_top=False, weights='imagenet', input_shape=input_shape)
 
-    
-    SEED = SEED * 2
+    # Set layers to not trainable
+    for layer in vgg.layers:
+        layer.trainable = False
+
+    x = vgg.layers[-1].output
+
+    SEED = 512
     for i in range(2):
         SEED = SEED // 2
-        x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
+        x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) 
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        x = Dropout(0.5)(x)
+        x = Dropout(0.2)(x)
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
-    # x = BatchNormalization()(x)
     x = Activation('sigmoid')(x)
 
-    model = Model(input_layer, x)
-    # model.compile(optimizer=Adam(), loss=loss, metrics=[P_, XY_, C_])
-    # rmsprop = RMSprop(learning_rate=0.01, rho=0.9)
-    # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(optimizer='adam', loss=loss, metrics=[P_, XY_, C_])
-    return model
+    vgg = Model(vgg.input, x)
+    vgg.compile(optimizer='adam', loss=loss, metrics=[P_, XY_, C_])
+    return vgg
 
 def load_images_from_directory(path):
 
-    image_paths = glob.glob(path + "images/*.jpeg")
+    image_paths = glob.glob(path + "images/*.jpg")
     label_paths = glob.glob(path + "labels/*.txt")
 
     image_paths.sort()
@@ -240,14 +227,16 @@ def main(model_path):
     model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
     # ---------- Train
+
+    SAMPLE = 100
     BATCH  = 8
-    EPOCH  = 500
+    EPOCH  = 100
 
 
     # print()
     # path = "test_data/"
 
-    t_1_x_train,t_1_y_train = load_images_from_directory("test_data/t_train/")
+    t_1_x_train,t_1_y_train = load_images_from_directory("test_data/t_train_black/")
     # t_back_x_train,t_back_y_train = load_images_from_directory("test_data/t_back/")
     t_real_x_train,t_real_y_train = load_images_from_directory("test_data/t_val/")
 
@@ -305,6 +294,7 @@ def main(model_path):
         cv2.imwrite('output_tests/train/test_render_{:02d}.png'.format(r),rendered)
 
     # Plot testing
+    print("----------------------------")
     results = model.predict(x_val)
     # results = y_val
 

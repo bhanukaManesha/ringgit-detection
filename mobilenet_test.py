@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 import tensorflow as tf
 from tensorflow import keras
 from train import *
@@ -20,7 +20,7 @@ def main(model_path):
 
     model = load_model(model_path)
     
-    t_1_x_train,t_1_y_train = load_images_from_directory("test_data/t_train_black/")
+    t_1_x_train,t_1_y_train = load_images_from_directory("test_data/t_train/")
     # t_back_x_train,t_back_y_train = load_images_from_directory("test_data/t_back/")
     t_real_x_train,t_real_y_train = load_images_from_directory("test_data/t_val/")
 

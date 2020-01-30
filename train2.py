@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from common import *
@@ -74,7 +75,7 @@ def P_(fact, pred):
     # Prediction
     pred_conf = pred[:,:,0]
     # PROBABILITY
-    return binary_accuracy(fact_conf, pred_conf)
+    return binary_accuracy(fact_conf, pred_conf,threshold=0.8)
 
 def XY_(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -138,23 +139,23 @@ def get_model():
     input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
     x = input_layer
 
-    SEED = 8
+    SEED = 16
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
         SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        x = Dropout(0.2)(x)
+        # x = Dropout(0.2)(x)
         for _ in range(i):
             x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
             x = BatchNormalization()(x)
             x = Activation('relu')(x)
-            x = Dropout(0.2)(x)
+            # x = Dropout(0.2)(x)
 
             x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
             x = BatchNormalization()(x)
             x = Activation('relu')(x)
-            x = Dropout(0.2)(x)
+            # x = Dropout(0.2)(x)
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
     
@@ -164,7 +165,7 @@ def get_model():
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        x = Dropout(0.2)(x)
+        x = Dropout(0.5)(x)
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
     # x = BatchNormalization()(x)
@@ -179,7 +180,7 @@ def get_model():
 
 def load_images_from_directory(path):
 
-    image_paths = glob.glob(path + "images/*.jpg")
+    image_paths = glob.glob(path + "images/*.jpeg")
     label_paths = glob.glob(path + "labels/*.txt")
 
     image_paths.sort()
@@ -239,8 +240,6 @@ def main(model_path):
     model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
     # ---------- Train
-
-    SAMPLE = 100
     BATCH  = 8
     EPOCH  = 500
 

@@ -137,8 +137,6 @@ class HistoryCheckpoint(keras.callbacks.Callback):
         with open('{}/history.txt'.format(self.folder), 'a') as f:
             f.write(h + '\n')
 
-
-
 def get_model():
 
     input_shape = (WIDTH, HEIGHT, CHANNEL)
@@ -153,7 +151,7 @@ def get_model():
 
     SEED = 1280
     for i in range(2):
-        SEED = SEED // 4
+        SEED = SEED // 2
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) 
         x = BatchNormalization()(x)
         x = Activation('relu')(x)

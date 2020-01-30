@@ -72,5 +72,5 @@ def read_json(folder_path):
 if __name__ == "__main__":
     # read_json("validation_frames")
 
-    parse("test_data/handlabel/")
+    parse("test_data/experiment/45/")
 

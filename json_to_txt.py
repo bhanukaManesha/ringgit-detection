@@ -29,9 +29,13 @@ def parse(folder_path):
 
                 x1 = point[0][0]
                 y1 = point[0][1]
-
                 x2 = point[1][0]
                 y2 = point[1][1]
+
+                x1 = (x1/64) * WIDTH
+                x2 = (x2/64) * WIDTH
+                y1 = (y1/64) * HEIGHT
+                y2 = (y2/64) * HEIGHT
 
                 width = x2 - x1
                 height = y2 - y1
@@ -68,5 +72,5 @@ def read_json(folder_path):
 if __name__ == "__main__":
     # read_json("validation_frames")
 
-    parse("validation_frames")
+    parse("test_data/handlabel/")
 

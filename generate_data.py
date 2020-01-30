@@ -5,24 +5,6 @@ from common import *
 import cv2
 import tensorflow as tf
 
-def resize_image(image, height, width, channels):
-
-    o_height, o_width, _ = image.shape
-
-    resized = np.zeros((height, width, channels))
-
-    scale_factor = o_height / width
-
-    resized_width = int(o_width/scale_factor)
-    resized_height = int(o_height/scale_factor)
-
-    res = cv2.resize(image, dsize=(resized_width,resized_height), interpolation=cv2.INTER_CUBIC)
-
-    resized = res[0:height, 0:width, :]
-
-    return resized/255.0
-
-
 def convert_data_to_image(x_data, y_data):
     # Input.
     image = np.reshape(x_data, [HEIGHT, WIDTH, CHANNEL])
@@ -31,15 +13,18 @@ def convert_data_to_image(x_data, y_data):
     labels = []
 
     n_row, n_col, _ = y_data.shape
+
     for row in range(n_row):
         for col in range(n_col):
             d = y_data[row, col]
             # If cash note in the grid cell
-            if d[0] < 0.8:
+            if d[0] < 0.5:
                 continue
 
+            print(row,col)
             # Convert data.
             bx, by, bw, bh = d[1:5]
+
             w = int(bw * WIDTH)
             h = int(bh * HEIGHT)
             x = int(col * GRID_WIDTH + (bx * GRID_WIDTH - w/2))

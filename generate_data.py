@@ -18,7 +18,7 @@ def convert_data_to_image(x_data, y_data):
         for col in range(n_col):
             d = y_data[row, col]
             # If cash note in the grid cell
-            if d[0] < 0.5:
+            if d[0] < DETECTION_PARAMETER:
                 continue
 
             print(row,col)

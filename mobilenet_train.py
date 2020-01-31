@@ -21,7 +21,7 @@ from tensorflow import keras
 from tensorflow.keras.metrics import binary_accuracy, categorical_accuracy
 from tensorflow.keras.optimizers import RMSprop,SGD
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout
+from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout,GlobalAveragePooling2D
 from tensorflow.keras.backend import *
 
 from tensorflow.keras.applications import vgg16,mobilenet_v2
@@ -79,7 +79,7 @@ def P_(fact, pred):
     # Prediction
     pred_conf = pred[:,:,0]
     # PROBABILITY
-    return binary_accuracy(fact_conf, pred_conf)
+    return binary_accuracy(fact_conf, pred_conf, threshold=0.8)
 
 def XY_(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -147,9 +147,9 @@ def get_model():
     for layer in mobilenet.layers:
         layer.trainable = False
 
-    x = mobilenet.layers[-1].output
+    x = mobilenet.output
 
-    SEED = 1280
+    SEED = 512
     for i in range(2):
         SEED = SEED // 2
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) 
@@ -166,7 +166,7 @@ def get_model():
 
 def load_images_from_directory(path):
 
-    image_paths = glob.glob(path + "images/*.jpg")
+    image_paths = glob.glob(path + "images/*.jpeg")
     label_paths = glob.glob(path + "labels/*.txt")
 
     image_paths.sort()
@@ -225,10 +225,6 @@ def main(model_path):
     model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
     # ---------- Train
-
-    SAMPLE = 100
-    BATCH  = 8
-    EPOCH  = 300
 
     t_1_x_train,t_1_y_train = load_images_from_directory("test_data/t_train/")
     # t_back_x_train,t_back_y_train = load_images_from_directory("test_data/t_back/")

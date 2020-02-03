@@ -139,23 +139,23 @@ def get_model():
     input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
     x = input_layer
 
-    SEED = 16
+    SEED = 32
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
         SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        # x = Dropout(0.2)(x)
+        x = Dropout(0.2)(x)
         for _ in range(i):
             x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
             x = BatchNormalization()(x)
             x = Activation('relu')(x)
-            # x = Dropout(0.2)(x)
+            x = Dropout(0.2)(x)
 
             x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
             x = BatchNormalization()(x)
             x = Activation('relu')(x)
-            # x = Dropout(0.2)(x)
+            x = Dropout(0.2)(x)
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
     
@@ -180,7 +180,7 @@ def get_model():
 
 def load_images_from_directory(path):
 
-    image_paths = glob.glob(path + "images/*.jpeg")
+    image_paths = glob.glob(path + "images/*.jpg")
     label_paths = glob.glob(path + "labels/*.txt")
 
     image_paths.sort()
@@ -240,10 +240,6 @@ def main(model_path):
     model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
     # ---------- Train
-    BATCH  = 8
-    EPOCH  = 500
-
-
     # print()
     # path = "test_data/"
 
@@ -291,14 +287,13 @@ def main(model_path):
         os.makedirs(directory + "/train")
         os.makedirs(directory + "/valid")
     
-
     # Plot training
     results = model.predict(x_train)
-    # results = y_train
 
     for r in range(len(results)):
         x_data = x_train[r]
         y_data = results[r]
+        # y_data = y_train[r]
 
         image, texts = convert_data_to_image(x_data, y_data)
         rendered = render_with_labels(image, texts, display = False)
@@ -306,15 +301,17 @@ def main(model_path):
 
     # Plot testing
     results = model.predict(x_val)
-    # results = y_val
 
     for r in range(len(results)):
         x_data = x_val[r]
         y_data = results[r]
+        # y_data = y_val[r]
 
         image, texts = convert_data_to_image(x_data, y_data)
         rendered = render_with_labels(image, texts, display = False)
         cv2.imwrite('output_tests/valid/test_render_{:02d}.png'.format(r),rendered)
+
+
 
 
 if __name__ == '__main__':

@@ -58,6 +58,7 @@ def main(model_path):
     for r in range(len(results)):
         x_data = x_train[r]
         y_data = results[r]
+        # y_data = y_train[r]
 
         image, texts = convert_data_to_image(x_data, y_data)
         rendered = render_with_labels(image, texts, display = False)
@@ -69,6 +70,7 @@ def main(model_path):
     for r in range(len(results)):
         x_data = x_val[r]
         y_data = results[r]
+        # y_data = y_val[r]
 
         image, texts = convert_data_to_image(x_data, y_data)
         rendered = render_with_labels(image, texts, display = False)

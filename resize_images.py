@@ -25,7 +25,7 @@ def resize_image(image, height, width, channels):
 
 def resize_images_in_folder(folder_path):
 
-    image_paths = glob.glob(folder_path + "/*.jpeg")
+    image_paths = glob.glob(folder_path + "/*.jpg")
 
     for path in image_paths:
         
@@ -45,5 +45,5 @@ def resize_images_in_folder(folder_path):
     
 
 if __name__ == "__main__":
-    resize_images_in_folder("test_data/experiment/224x224/338/")
+    resize_images_in_folder("test_data/old/random_b/images/")
 

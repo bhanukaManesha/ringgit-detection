@@ -6,24 +6,24 @@ CHANNEL     = 3
 
 SAMPLE = 100
 BATCH  = 8
-EPOCH  = 500
+EPOCH  = 300
 
-DETECTION_PARAMETER = 0.8
+DETECTION_PARAMETER = 0.5
 
-GRID_WIDTH  = int(32) # The size of 1 cell.
-GRID_HEIGHT = int(32)
-WIDTH       = int(224)
-HEIGHT      = int(224)
-GRID_X      = WIDTH // GRID_WIDTH # The number of cells.
-GRID_Y      = HEIGHT // GRID_HEIGHT
-
-
-# GRID_WIDTH  = int(8) # The size of 1 cell.
-# GRID_HEIGHT = int(8)
-# WIDTH       = int(64)
-# HEIGHT      = int(64)
+# GRID_WIDTH  = int(32) # The size of 1 cell.
+# GRID_HEIGHT = int(32)
+# WIDTH       = int(224)
+# HEIGHT      = int(224)
 # GRID_X      = WIDTH // GRID_WIDTH # The number of cells.
 # GRID_Y      = HEIGHT // GRID_HEIGHT
+
+
+GRID_WIDTH  = int(8) # The size of 1 cell.
+GRID_HEIGHT = int(8)
+WIDTH       = int(64)
+HEIGHT      = int(64)
+GRID_X      = WIDTH // GRID_WIDTH # The number of cells.
+GRID_Y      = HEIGHT // GRID_HEIGHT
 
 
 # R_WIDTH       = int(1080)

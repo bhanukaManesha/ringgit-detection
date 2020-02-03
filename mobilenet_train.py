@@ -18,7 +18,7 @@ import tensorflow as tf
 
 from tensorflow.keras.callbacks import ModelCheckpoint, Callback
 from tensorflow import keras
-from tensorflow.keras.metrics import binary_accuracy, categorical_accuracy
+from tensorflow.keras.metrics import Accuracy, binary_accuracy, categorical_accuracy
 from tensorflow.keras.optimizers import RMSprop,SGD
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout,GlobalAveragePooling2D
@@ -71,6 +71,7 @@ def loss(fact, pred):
     # --- Total loss
     return sum(conf_loss + box_loss + cat_loss, axis=-1)
 
+
 def P_(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -79,7 +80,7 @@ def P_(fact, pred):
     # Prediction
     pred_conf = pred[:,:,0]
     # PROBABILITY
-    return binary_accuracy(fact_conf, pred_conf, threshold=0.8)
+    return binary_accuracy(fact_conf, pred_conf)
 
 def XY_(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -144,18 +145,18 @@ def get_model():
     mobilenet = mobilenet_v2.MobileNetV2(include_top=False, weights='imagenet', input_shape=input_shape)
 
     # Set layers to not trainable
-    for layer in mobilenet.layers:
-        layer.trainable = False
+    # for layer in mobilenet.layers:
+    #     layer.trainable = False
 
     x = mobilenet.output
 
-    SEED = 512
-    for i in range(2):
-        SEED = SEED // 2
-        x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) 
-        x = BatchNormalization()(x)
-        x = Activation('relu')(x)
-        x = Dropout(0.2)(x)
+    # SEED = 512
+    # for i in range(2):
+    #     SEED = SEED // 2
+    #     x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) 
+    #     x = BatchNormalization()(x)
+    #     x = Activation('relu')(x)
+    #     # x = Dropout(0.2)(x)
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
     x = Activation('sigmoid')(x)
@@ -225,17 +226,12 @@ def main(model_path):
     model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
     # ---------- Train
-
     t_1_x_train,t_1_y_train = load_images_from_directory("test_data/t_train/")
-    # t_back_x_train,t_back_y_train = load_images_from_directory("test_data/t_back/")
     t_real_x_train,t_real_y_train = load_images_from_directory("test_data/t_val/")
 
     # Append everything
     x_train = []
     y_train = []
-
-    # x_train = np.concatenate((np.asarray(t_1_x_train),np.asarray(t_back_x_train)), axis=0)
-    # y_train = np.concatenate((np.asarray(t_1_y_train),np.asarray(t_back_y_train)), axis=0)
 
     x_train = np.asarray(t_1_x_train)
     y_train = np.asarray(t_1_y_train)

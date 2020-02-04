@@ -2,7 +2,7 @@
 import tensorflow as tf
 from tensorflow import keras
 from train import *
-from generate_data import *
+from utils import *
 import os
 from train2 import *
 

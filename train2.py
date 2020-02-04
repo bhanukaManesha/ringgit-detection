@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from common import *
-from generate_data import *
+from utils import *
 
 from datetime import datetime
 import os
@@ -22,6 +22,8 @@ from tensorflow.keras.optimizers import RMSprop,SGD
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout
 from tensorflow.keras.backend import *
+
+from rotation_generator import generator
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 

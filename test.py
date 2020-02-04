@@ -19,17 +19,32 @@ def main(model_path):
 
     model = load_model(model_path)
 
-    x_tests, y_tests = next(generator(10, mode="train"))
+    x_test, y_test = next(generator(32))
 
-    # results = y_tests
-    results = model.predict(x_tests)
+    real_x_train,real_y_train = load_images_from_directory("test_data/t_val/")
+    x_val = np.concatenate((np.asarray(real_x_train),np.asarray(x_test)), axis=0)
+    y_val = np.concatenate((np.asarray(real_y_train),np.asarray(y_test)), axis=0)
 
+
+    # Remove the folder
+    shutil.rmtree("output_tests/")
+    
+    # Create a folder
+    directory = "output_tests"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+
+    results = model.predict(x_test)
+
+    # Plot training
     for r in range(len(results)):
-        x_data = x_tests[r]
+        x_data = x_val[r]
         y_data = results[r]
+        # y_data = y_val[r]
 
-        image, labels = convert_data_to_image(x_data, y_data)
-        rendered = render_with_labels(image, labels, display = True)
+        image, texts = convert_data_to_image(x_data, y_data)
+        rendered = render_with_labels(image, texts, display = False)
         cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
 
 

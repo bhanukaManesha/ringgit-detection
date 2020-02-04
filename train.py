@@ -1,14 +1,17 @@
+#!/usr/bin/env python
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from common import *
-from generate_data import *
+from utils import *
 
 from datetime import datetime
 import os
+import shutil
 import math
 import numpy as np
 import cv2
 import json
+import glob
 
 import tensorflow as tf
 
@@ -17,8 +20,10 @@ from tensorflow import keras
 from tensorflow.keras.metrics import binary_accuracy, categorical_accuracy
 from tensorflow.keras.optimizers import RMSprop,SGD
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D
+from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout
 from tensorflow.keras.backend import *
+
+from rotation_generator import generator
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
@@ -48,7 +53,7 @@ def loss(fact, pred):
 
     # --- Confident loss
     conf_loss = tf.square(fact_conf - pred_conf)
-    # conf_loss = (mask_obj * conf_loss) + (mask_noobj * conf_loss)
+    conf_loss = (mask_obj * conf_loss) + (mask_noobj * conf_loss)
     # print('conf_loss.shape: ', conf_loss.shape)
 
     # --- Box loss
@@ -72,20 +77,20 @@ def P_(fact, pred):
     # Prediction
     pred_conf = pred[:,:,0]
     # PROBABILITY
-    return binary_accuracy(fact_conf, pred_conf)
+    return binary_accuracy(fact_conf, pred_conf,threshold=0.8)
 
 def XY_(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     # Truth
     fact_conf = fact[:,:,0]
-    fw = fact[:,:,3] * GRID_WIDTH
-    fh = fact[:,:,4] * GRID_HEIGHT
+    fw = fact[:,:,3] * WIDTH
+    fh = fact[:,:,4] * HEIGHT
     fx = fact[:,:,0] * GRID_WIDTH - fw/2
     fy = fact[:,:,1] * GRID_HEIGHT - fh/2
     # Prediction
-    pw = pred[:,:,3] * GRID_WIDTH
-    ph = pred[:,:,4] * GRID_HEIGHT
+    pw = pred[:,:,3] * WIDTH
+    ph = pred[:,:,4] * HEIGHT
     px = pred[:,:,0] * GRID_WIDTH - pw/2
     py = pred[:,:,1] * GRID_HEIGHT - ph/2
     # IOU
@@ -136,20 +141,23 @@ def get_model():
     input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
     x = input_layer
 
-    SEED = 32
-
+    SEED = 16
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
         SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
-        # x = BatchNormalization()(x)
+        x = BatchNormalization()(x)
         x = Activation('relu')(x)
+        x = Dropout(0.4)(x)
         for _ in range(i):
             x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-            # x = BatchNormalization()(x)
+            x = BatchNormalization()(x)
             x = Activation('relu')(x)
+            x = Dropout(0.4)(x)
+
             x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-            # x = BatchNormalization()(x)
+            x = BatchNormalization()(x)
             x = Activation('relu')(x)
+            x = Dropout(0.4)(x)
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
     
@@ -157,8 +165,9 @@ def get_model():
     for i in range(2):
         SEED = SEED // 2
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
-        # x = BatchNormalization()(x)
+        x = BatchNormalization()(x)
         x = Activation('relu')(x)
+        x = Dropout(0.4)(x)
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
     # x = BatchNormalization()(x)
@@ -167,55 +176,57 @@ def get_model():
     model = Model(input_layer, x)
     # model.compile(optimizer=Adam(), loss=loss, metrics=[P_, XY_, C_])
     # rmsprop = RMSprop(learning_rate=0.01, rho=0.9)
+    # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(optimizer='adam', loss=loss, metrics=[P_, XY_, C_])
     return model
 
+def load_images_from_directory(path):
 
-def generator(batch_size, mode="train"):
+    image_paths = glob.glob(path + "images/*.jpg")
+    label_paths = glob.glob(path + "labels/*.txt")
 
-    if mode == "train":
-        images, labels = read_data(mode=mode)
-    elif mode == "test":
-        images, labels = read_data(mode=mode)
-    elif mode == "valid":
-        images, labels = read_data(mode=mode)
-    else:
-        print("Invalid Mode")
+    image_paths.sort()
+    label_paths.sort()
 
+    x_train = []
+    y_train = []
 
-    while True:
-        # Empty batch arrays.
-        x_trains = []
-        y_trains = []
-        # Create batch data.
-        for i in range(batch_size):
-            # image, texts = generate_image(WIDTH, HEIGHT, seeds=random.sample(TEXTS, k=len(TEXTS)))
-            x_data, y_data = load_image(images, labels)
-
-            # Append
-            x_trains.append(x_data)
-            y_trains.append(y_data)
-
-        x_trains = np.asarray(x_trains).reshape((batch_size, HEIGHT, WIDTH, CHANNEL))
-        y_trains = np.asarray(y_trains).reshape((batch_size, GRID_Y, GRID_X, 5+len(CLASSES)))
-        yield x_trains, y_trains
+    
+    for path in image_paths:
+        # print(path)
+        image = cv2.imread(path).astype(np.float32)
+        x_train.append(image)
 
 
+    for path in label_paths:
+        # print(path)
+        with open(path) as f:
+            annotations = f.readlines()
 
-def main(model_path, load_model=True):
+        annotations = [x.strip() for x in annotations]
+        annotations = [x.split() for x in annotations]
+        annotations = np.asarray(annotations)
 
-    if load_model:
+        y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
 
-        with open(model_path + "/model.json") as json_file:
-            json_config = json_file.read()
+        for row in range(GRID_X):
+            for col in range(GRID_Y):
+                y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
+                y_data[row, col, 1:5] = [
+                    float(annotations[row * GRID_X + col][2]),
+                    float(annotations[row * GRID_X + col][3]),
+                    float(annotations[row * GRID_X + col][4]),
+                    float(annotations[row * GRID_X + col][5])
+                ]
+                y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
 
-        model = keras.models.model_from_json(json_config)
-        model.load_weights(model_path + "/model_weights.h5")
+        y_train.append(y_data)
 
-        # optimizer = SGD(lr=0.001)
-        model.compile(optimizer="adam", loss=loss, metrics=[P_, XY_, C_])
-    else:
-        model = get_model()
+    return x_train,y_train
+
+def main():
+
+    model = get_model()
 
     print(model.summary())
     print('')
@@ -231,42 +242,45 @@ def main(model_path, load_model=True):
     model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
     # ---------- Train
+    x_test, y_test = next(generator(32))
 
-    SAMPLE = 29124
-    BATCH  = 16
-    EPOCH  = 500
+    real_x_train,real_y_train = load_images_from_directory("test_data/t_val/")
+    x_val = np.concatenate((np.asarray(real_x_train),np.asarray(x_test)), axis=0)
+    y_val = np.concatenate((np.asarray(real_y_train),np.asarray(y_test)), axis=0)
 
-    x_vals, y_vals = next(generator(SAMPLE, mode="valid"))
 
-    model.fit_generator(
-        generator=generator(BATCH, mode="train"),
+    model.fit(
+        x=generator(BATCH),
         steps_per_epoch=(SAMPLE // BATCH),
         epochs=EPOCH,
-        validation_data=(x_vals, y_vals),
+        validation_data=(x_val, y_val),
         shuffle=True,
         callbacks=[model_checkpoint, history_checkpoint])
+    
+    # ---------- Test
 
-    # # ---------- Test
+    # Remove the folder
+    shutil.rmtree("output_tests/")
+    
+    # Create a folder
+    directory = "output_tests"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        os.makedirs(directory + "/train")
+        os.makedirs(directory + "/valid")
+    
 
-    # x_tests, y_tests = next(generator(10, mode="test"))
-    x_tests = x_vals
-    y_tests = y_vals
+    results = model.predict(x_val)
 
-    # results = y_tests
-    results = model.predict(x_tests)
-
+    # Plot training
     for r in range(len(results)):
-        x_data = x_tests[r]
+        x_data = x_val[r]
         y_data = results[r]
+        # y_data = y_val[r]
 
         image, texts = convert_data_to_image(x_data, y_data)
         rendered = render_with_labels(image, texts, display = False)
         cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
-        # rendered.save('output_tests/test_render_{:02d}.png'.format(r), 'PNG')
-
 
 if __name__ == '__main__':
-    directory = "models/"
-    folders = [x[0] for x in os.walk(directory)]
-    folders.sort()
-    main(model_path = folders[-1], load_model=False)
+    main()

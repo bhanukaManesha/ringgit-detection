@@ -1,6 +1,8 @@
 from common import *
 from utils import *
 
+# Read the images
+IMAGES, _ = read_subimages(MONEY_PATH)
 
 def generate(output_currency = "RM50", angle = 0) :
     '''
@@ -8,12 +10,8 @@ def generate(output_currency = "RM50", angle = 0) :
     @rows - number of rows for the image
     @col - number of columns for the image
     '''
-
-    # Read the images
-    files = glob.glob(MONEY_PATH + "*.png")
-
-    image_path = random.choice(files)
-    image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    
+    image = random.choice(IMAGES)
 
     # Generate the background
     background = generate_background()

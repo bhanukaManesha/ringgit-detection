@@ -11,27 +11,22 @@ VENV        = 'virtualenv'
 MODEL       = 'models'
 OUTPUT      = 'output_tests'
 TESTS       = 'test_results'
+
 LOCAL_FILES = [
     'common.py',
     'generate_data.py',
     'train.py',
-    'train2.py',
     'test.py',
     'models',
-    'data',
-    'test_data'
+    'images',
 ]
 
 PYTHON_SCRIPTS = [
     'common.py',
     'generate_data.py',
-    'train.py',
     'test.py',
-    'train2.py',
     'train.py'
 ]
-
-
 
 @task
 def connect(ctx):

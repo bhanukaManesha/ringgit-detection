@@ -4,11 +4,11 @@ CLASSES       = ["RM50"]
 
 CHANNEL     = 3
 
-SAMPLE = 100
+SAMPLE = 128
 BATCH  = 8
-EPOCH  = 300
+EPOCH  = 100
 
-DETECTION_PARAMETER = 0.5
+DETECTION_PARAMETER = 0.8
 
 GRID_WIDTH  = int(8) # The size of 1 cell.
 GRID_HEIGHT = int(8)

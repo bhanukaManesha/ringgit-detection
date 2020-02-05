@@ -10,7 +10,7 @@ def generate(output_currency = "RM50", angle = 0) :
     @rows - number of rows for the image
     @col - number of columns for the image
     '''
-    
+
     image = random.choice(IMAGES)
 
     # Generate the background
@@ -56,8 +56,8 @@ def generate(output_currency = "RM50", angle = 0) :
     # Overlay the image to the background image
     final_image = overlay_transparent(background,resize_image,x_top,y_top)
 
-    # Update the brightness
-    final_image = final_image * random.uniform(0.3, 2.0)
+    # # Update the brightness
+    final_image = final_image * random.uniform(0.5, 1.5)
 
     final = np.clip(final_image,a_min = 0, a_max = 255.0)
 

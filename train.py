@@ -147,17 +147,17 @@ def get_model():
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        x = Dropout(0.4)(x)
+        # x = Dropout(0.2)(x)
         for _ in range(i):
             x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
             x = BatchNormalization()(x)
             x = Activation('relu')(x)
-            x = Dropout(0.4)(x)
+            # x = Dropout(0.2)(x)
 
             x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
             x = BatchNormalization()(x)
             x = Activation('relu')(x)
-            x = Dropout(0.4)(x)
+            # x = Dropout(0.2)(x)
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
     
@@ -167,7 +167,7 @@ def get_model():
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        x = Dropout(0.4)(x)
+        x = Dropout(0.3)(x)
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
     # x = BatchNormalization()(x)
@@ -266,8 +266,6 @@ def main():
     directory = "output_tests"
     if not os.path.exists(directory):
         os.makedirs(directory)
-        os.makedirs(directory + "/train")
-        os.makedirs(directory + "/valid")
     
 
     results = model.predict(x_val)

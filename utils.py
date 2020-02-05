@@ -46,20 +46,70 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     # return the resized image
     return resized
 
+def generate_geometrical_noise(image):
+    height, width, depth = image.shape
+    
 
-def generate_background(mode = "noise"):
+    # # Draw line.
+    for _ in range(10):
+        x1 = random.randint(0, width)
+        y1 = random.randint(0, height)
+        x2 = random.randint(0, width)
+        y2 = random.randint(0, height)
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+        thickness = random.randint(1, 5)
+
+        image = cv2.line(image, (x1,y1), (x2,y2), (r,g,b), thickness) 
+
+    # Draw rect.
+    for _ in range(20):
+        x1 = random.randint(0, width)
+        y1 = random.randint(0, height)
+        x2 = random.randint(0, width)
+        y2 = random.randint(0, height)
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+        thickness = random.randint(1, 2)
+
+        image = cv2.rectangle(image, (x1,y1), (x2,y2), (r,g,b), thickness)
+
+    # Draw circle.
+    for _ in range(20):
+        x1 = random.randint(-width//2, width+width//2)
+        y1 = random.randint(-height//2, height+height//2)
+        radius = random.randint(0, width)
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+        thickness = random.randint(0, 1)
+
+        image = cv2.circle(image, (x1,y1), radius, (r,g,b), thickness) 
+
+    return image
+
+
+def generate_background(mode = "geometric"):
     
     if mode == "white" :
 
-        return np.full((HEIGHT,WIDTH,CHANNELS), 255.)
+        return np.full((HEIGHT,WIDTH,CHANNEL), 255.)
 
     elif mode== "black" :
 
-        return np.full((HEIGHT,WIDTH,CHANNELS), 0.)
+        return np.full((HEIGHT,WIDTH,CHANNEL), 0.)
 
     elif mode == "noise" :
-
         return np.random.randint(256, size=(HEIGHT, WIDTH,CHANNEL))
+
+    elif mode == 'geometric':
+        
+        return generate_geometrical_noise(np.full((HEIGHT,WIDTH,CHANNEL), 0.))
+
+
+
 
 def progress(count, total, suffix=''):
     bar_len = 60
@@ -297,7 +347,7 @@ def load_image(images, labels):
 
 def render_with_labels(image, labels, display):
     colors = {
-        "RM50" : (0,128,0),
+        "RM50" : (0,255,0),
         "RM1" : (255,0,0),
         "RM10" : (0,0,255),
         "RM20" : (0,128,255),

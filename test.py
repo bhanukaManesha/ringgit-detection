@@ -2,7 +2,6 @@
 import tensorflow as tf
 from tensorflow import keras
 from train import *
-from generate_data import *
 import os
 
 def load_model(model_path):
@@ -21,7 +20,7 @@ def main(model_path):
 
     x_test, y_test = next(generator(32))
 
-    real_x_train,real_y_train = load_images_from_directory("test_data/t_val/")
+    real_x_train,real_y_train = load_images_from_directory("real/")
     x_val = np.concatenate((np.asarray(real_x_train),np.asarray(x_test)), axis=0)
     y_val = np.concatenate((np.asarray(real_y_train),np.asarray(y_test)), axis=0)
 

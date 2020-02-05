@@ -3,7 +3,7 @@ import glob
 from fabric import Connection
 from invoke import task
 
-HOST        = 'ec2-3-0-183-54.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-52-221-251-123.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
@@ -14,18 +14,21 @@ TESTS       = 'test_results'
 
 LOCAL_FILES = [
     'common.py',
-    'generate_data.py',
     'train.py',
     'test.py',
+    'utils.py',
+    'rotation_generator.py',
     'models',
     'images',
+    'real'
 ]
 
 PYTHON_SCRIPTS = [
     'common.py',
-    'generate_data.py',
+    'train.py',
     'test.py',
-    'train.py'
+    'utils.py',
+    'rotation_generator.py'
 ]
 
 @task
@@ -51,19 +54,12 @@ def setup(ctx):
             ctx.conn.run('pip install -U pip')
             ctx.conn.run('pip install --upgrade pip')
             ctx.conn.run('pip install pip-tools')
-            ctx.conn.run('pip-compile --upgrade requirements.in')
-            ctx.conn.run('pip-sync')
-
-@task
-def initialpush(ctx, model=''):
-    ctx.run('rsync -rv --progress {files} {remote}'.format(files=' '.join(LOCAL_FILES), remote=REMOTE))
-    model = sorted([fp for fp in glob.glob('models/*') if model and model in fp], reverse=True)
-    if model:
-        ctx.run('rsync -rv {folder}/ {remote}/{folder}'.format(remote=REMOTE, folder=model[0]))
+            ctx.conn.run('pip-compile requirements.in')
+            ctx.conn.run('pip install -r requirements.txt')
 
 @task
 def push(ctx, model=''):
-    ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(PYTHON_SCRIPTS), remote=REMOTE))
+    ctx.run('rsync -rv --progress {files} {remote}'.format(files=' '.join(LOCAL_FILES), remote=REMOTE))
     model = sorted([fp for fp in glob.glob('models/*') if model and model in fp], reverse=True)
     if model:
         ctx.run('rsync -rv {folder}/ {remote}/{folder}'.format(remote=REMOTE, folder=model[0]))
@@ -74,10 +70,18 @@ def pull(ctx):
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
 
 @task(pre=[connect], post=[close])
-def train(ctx):
+def train(ctx, model=''):
+    ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(PYTHON_SCRIPTS), remote=REMOTE))
+    model = sorted([fp for fp in glob.glob('models/*') if model and model in fp], reverse=True)
+    if model:
+        ctx.run('rsync -rv {folder}/ {remote}/{folder}'.format(remote=REMOTE, folder=model[0]))
+
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate tensorflow2_p36'):
             ctx.conn.run('dtach -A /tmp/{} python train.py'.format(ROOT), pty=True)
+
+    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
+    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
 
 @task(pre=[connect], post=[close])
 def resume(ctx):
@@ -85,9 +89,17 @@ def resume(ctx):
 
 @task(pre=[connect], post=[close])
 def test(ctx, model=''):
+    ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(PYTHON_SCRIPTS), remote=REMOTE))
+    model = sorted([fp for fp in glob.glob('models/*') if model and model in fp], reverse=True)
+    if model:
+        ctx.run('rsync -rv {folder}/ {remote}/{folder}'.format(remote=REMOTE, folder=model[0]))
+
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate tensorflow2_p36'):
             ctx.conn.run('python test.py {}'.format(model), pty=True)
+
+    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
+    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
 
 @task(pre=[connect], post=[close])
 def clean(ctx):

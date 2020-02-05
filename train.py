@@ -167,7 +167,7 @@ def get_model():
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        x = Dropout(0.3)(x)
+        x = Dropout(0.2)(x)
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
     # x = BatchNormalization()(x)
@@ -244,7 +244,7 @@ def main():
     # ---------- Train
     x_test, y_test = next(generator(32))
 
-    real_x_train,real_y_train = load_images_from_directory("test_data/t_val/")
+    real_x_train,real_y_train = load_images_from_directory("real/")
     x_val = np.concatenate((np.asarray(real_x_train),np.asarray(x_test)), axis=0)
     y_val = np.concatenate((np.asarray(real_y_train),np.asarray(y_test)), axis=0)
 

@@ -72,7 +72,7 @@ def generate_geometrical_noise(image):
         r = random.randint(0, 255)
         g = random.randint(0, 255)
         b = random.randint(0, 255)
-        thickness = random.randint(1, 2)
+        thickness = random.randint(1, 3)
 
         image = cv2.rectangle(image, (x1,y1), (x2,y2), (r,g,b), thickness)
 
@@ -84,7 +84,7 @@ def generate_geometrical_noise(image):
         r = random.randint(0, 255)
         g = random.randint(0, 255)
         b = random.randint(0, 255)
-        thickness = random.randint(0, 1)
+        thickness = random.randint(1, 3)
 
         image = cv2.circle(image, (x1,y1), radius, (r,g,b), thickness) 
 

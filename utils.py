@@ -90,6 +90,24 @@ def generate_geometrical_noise(image):
 
     return image
 
+def change_brightness(image, mode = "uniform"):
+
+    if mode == "uniform":
+        image = image * random.uniform(0.5, 1.5)
+        return np.clip(final_image,a_min = 0, a_max = 255.0)
+
+    if mode == "transparent_triangle":
+
+        pt1 = (random.randint(0,WIDTH), random.randint(0,HEIGHT))
+        pt2 = (random.randint(0,WIDTH), random.randint(0,HEIGHT))
+        pt3 = (random.randint(0,WIDTH), random.randint(0,HEIGHT))
+
+        triangle_cnt = np.array( [pt1, pt2, pt3] )
+        shape = cv2.drawContours(np.full((HEIGHT,WIDTH,CHANNEL), 255.), [triangle_cnt], 0, (0,0,0), -1)
+
+        return cv2.addWeighted(shape,0.3,image,0.7,0)
+        
+
 
 def generate_background(mode = "geometric"):
     
@@ -235,18 +253,19 @@ def convert_data_to_image(x_data, y_data):
 
     for row in range(n_row):
         for col in range(n_col):
+            
             d = y_data[row, col]
             # If cash note in the grid cell
             if d[0] < DETECTION_PARAMETER:
                 continue
-
+            # print(d[1:5])
             # Convert data.
             bx, by, bw, bh = d[1:5]
 
             w = int(bw * WIDTH)
             h = int(bh * HEIGHT)
-            x = int(col * GRID_WIDTH + (bx * GRID_WIDTH - w/2))
-            y = int(row * GRID_HEIGHT + (by * GRID_HEIGHT - h/2))
+            x = abs(int(col * GRID_WIDTH + (bx * GRID_WIDTH - w/2)))
+            y = abs(int(row * GRID_HEIGHT + (by * GRID_HEIGHT - h/2)))
 
             s = CLASSES[np.argmax(d[5:])]
 

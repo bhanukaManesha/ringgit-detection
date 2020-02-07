@@ -23,6 +23,7 @@ def generate(output_currency = "RM50", angle = 0) :
     # Calculating the height and width
     height, width, channels = background.shape
 
+
     random_size = random.uniform(0.6, 0.8)
     height_of_note = int(math.floor(height * random_size))
     width_of_note = int(math.floor(width * random_size))
@@ -39,8 +40,8 @@ def generate(output_currency = "RM50", angle = 0) :
     bounding_box_for_image = [default_box for i in range(GRID_X*GRID_Y)]
 
     # Calculate the x and y
-    x_center = width * LOCATION_X
-    y_center = height * LOCATION_Y
+    x_center = width * random.uniform(0.3, 0.7)
+    y_center = height * random.uniform(0.3, 0.7)
 
     # Resize the image
     if rotate_height > rotate_width:
@@ -57,10 +58,8 @@ def generate(output_currency = "RM50", angle = 0) :
     # Overlay the image to the background image
     final_image = overlay_transparent(background,resize_image,x_top,y_top)
 
-    # # Update the brightness
-    final_image = final_image * random.uniform(0.5, 1.5)
-
-    final = np.clip(final_image,a_min = 0, a_max = 255.0)
+    # Update the brightness
+    final_image = change_brightness(final_image, mode="transparent_triangle")
 
     
     box = {

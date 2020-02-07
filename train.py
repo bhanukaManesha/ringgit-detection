@@ -54,17 +54,16 @@ def loss(fact, pred):
     # --- Confident loss
     conf_loss = tf.square(fact_conf - pred_conf)
     conf_loss = (mask_obj * conf_loss) + (mask_noobj * conf_loss)
-    # print('conf_loss.shape: ', conf_loss.shape)
-
+    
     # --- Box loss
     xy_loss  = tf.square(fact_x - pred_x) + tf.square(fact_y - pred_y)
     wh_loss  = tf.square(tf.sqrt(fact_w) - tf.sqrt(pred_w)) + tf.square(tf.sqrt(fact_h) - tf.sqrt(pred_h))
-    box_loss = mask_obj * (xy_loss + wh_loss)
+    box_loss = mask_obj * (xy_loss + wh_loss) 
     # print('box_loss.shape: ', box_loss.shape)
 
     # --- Category loss
     cat_loss = mask_obj * sum(tf.square(fact_cat - pred_cat), axis=-1)
-    # print('cat_loss.shape: ', cat_loss.shape)
+    # print('cat_loss.shape: ', cat_loss.shape)    
 
     # --- Total loss
     return sum(conf_loss + box_loss + cat_loss, axis=-1)
@@ -143,40 +142,35 @@ def get_model():
 
     SEED = 16
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
-        SEED = SEED * 2
-        x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
+        SEED = SEED * 3
+        x = Conv2D(SEED, 3, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        # x = Dropout(0.2)(x)
-        for _ in range(i):
-            x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
-            # x = Dropout(0.2)(x)
+        # for _ in range(i):
+        #     x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
+        #     x = BatchNormalization()(x)
+        #     x = Activation('relu')(x)
 
-            x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
-            # x = Dropout(0.2)(x)
+        #     x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
+        #     x = BatchNormalization()(x)
+        #     x = Activation('relu')(x)
+            
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
     
     SEED = SEED * 2
     for i in range(2):
         SEED = SEED // 2
-        x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
+        x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         x = Dropout(0.2)(x)
 
-    x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
-    # x = BatchNormalization()(x)
+    x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
+    x = BatchNormalization()(x)
     x = Activation('sigmoid')(x)
 
     model = Model(input_layer, x)
-    # model.compile(optimizer=Adam(), loss=loss, metrics=[P_, XY_, C_])
-    # rmsprop = RMSprop(learning_rate=0.01, rho=0.9)
-    # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(optimizer='adam', loss=loss, metrics=[P_, XY_, C_])
     return model
 

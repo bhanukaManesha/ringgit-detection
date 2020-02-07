@@ -3,7 +3,7 @@ import glob
 from fabric import Connection
 from invoke import task
 
-HOST        = 'ec2-52-221-251-123.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-54-255-145-199.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
@@ -79,9 +79,6 @@ def train(ctx, model=''):
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate tensorflow2_p36'):
             ctx.conn.run('dtach -A /tmp/{} python train.py'.format(ROOT), pty=True)
-
-    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
-    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
 
 @task(pre=[connect], post=[close])
 def resume(ctx):

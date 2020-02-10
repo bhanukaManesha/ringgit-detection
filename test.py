@@ -44,6 +44,7 @@ def main(model_path):
         # y_data = y_val[r]
 
         image, texts = convert_data_to_image(x_data, y_data)
+        texts = non_maximum_supression(texts)
         rendered = render_with_labels(image, texts, display = False)
         cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
 

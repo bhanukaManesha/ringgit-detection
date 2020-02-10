@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+from common import *
+import tensorflow as tf
 import cv2
 import os
 import numpy as np
@@ -9,6 +12,7 @@ import json
 import sys
 import copy
 import glob
+from itertools import combinations
 
 from common import *
 
@@ -109,7 +113,7 @@ def change_brightness(image, mode = "uniform"):
         
 
 
-def generate_background(mode = "geometric"):
+def generate_background(mode = "noise"):
     
     if mode == "white" :
 
@@ -235,12 +239,37 @@ def rotate_image(mat, angle):
     rotated_mat = cv2.warpAffine(mat, rotation_mat, (bound_w, bound_h))
     return rotated_mat
 
-#!/usr/bin/env python3
-import random
-import numpy as np
-from common import *
-import cv2
-import tensorflow as tf
+def non_maximum_supression(labels):
+
+    remove_index = [0] * len(labels)
+
+    labels = sorted(labels, key=lambda label: label[2]) 
+    # print(labels)
+    for i in range(0,len(labels) - 1):
+
+        for j in range(i+1, len(labels) - 1):
+
+            # print(i,j)
+
+            box1 = labels[i]
+            box2 = labels[j]
+
+            value = iou(box1[1],box1[2],box1[3],box1[4],box2[1],box2[2],box2[3],box2[4])
+            
+            if value >= 0.1 and box1[0] > box2[0]:
+                remove_index[j] = 1
+            elif value >= 0.1 and box1[0] <= box2[0]:
+                remove_index[i] = 1
+            else:
+                pass
+
+    new_labels = []
+    for i in range(len(remove_index)):
+        if remove_index[i] == 0:
+            new_labels.append(labels[i])
+
+    # print(new_labels)
+    return new_labels
 
 def convert_data_to_image(x_data, y_data):
     # Input.
@@ -384,3 +413,34 @@ def render_with_labels(image, labels, display):
         cv2.destroyAllWindows()
 
     return image
+
+def calculate_iou(fact,pred):
+    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    # Truth
+    fact_conf = fact[:,:,0]
+    fw = fact[:,:,3] * WIDTH
+    fh = fact[:,:,4] * HEIGHT
+    fx = fact[:,:,0] * GRID_WIDTH - fw/2
+    fy = fact[:,:,1] * GRID_HEIGHT - fh/2
+    # Prediction
+    pw = pred[:,:,3] * WIDTH
+    ph = pred[:,:,4] * HEIGHT
+    px = pred[:,:,0] * GRID_WIDTH - pw/2
+    py = pred[:,:,1] * GRID_HEIGHT - ph/2
+    # IOU
+    intersect = (tf.minimum(fx+fw, px+pw) - tf.maximum(fx, px)) * (tf.minimum(fy+fh, py+ph) - tf.maximum(fy, py))
+    union = (fw * fh) + (pw * ph) - intersect
+    nonzero_count = tf.math.count_nonzero(fact_conf, dtype=tf.float32)
+    return (intersect/union)
+    # return switch(
+    #     tf.equal(nonzero_count, 0),
+    #     1.0,
+    #     sum((intersect / union) * fact_conf) / nonzero_count
+    # )
+
+def iou(fx,fy,fw,fh,px,py,pw,ph):
+    # IOU
+    intersect = (np.minimum(fx+fw, px+pw) - np.maximum(fx, px)) * (np.minimum(fy+fh, py+ph) - np.maximum(fy, py))
+    union = (fw * fh) + (pw * ph) - intersect
+    return (intersect/union)

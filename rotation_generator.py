@@ -40,8 +40,10 @@ def generate(output_currency = "RM50", angle = 0) :
     bounding_box_for_image = [default_box for i in range(GRID_X*GRID_Y)]
 
     # Calculate the x and y
-    x_center = width * random.uniform(0.3, 0.7)
-    y_center = height * random.uniform(0.3, 0.7)
+    # x_center = width * random.uniform(0.3, 0.7)
+    # y_center = height * random.uniform(0.3, 0.7)
+    x_center = width * 0.5
+    y_center = height * 0.5
 
     # Resize the image
     if rotate_height > rotate_width:
@@ -59,7 +61,7 @@ def generate(output_currency = "RM50", angle = 0) :
     final_image = overlay_transparent(background,resize_image,x_top,y_top)
 
     # Update the brightness
-    final_image = change_brightness(final_image, mode="transparent_triangle")
+    # final_image = change_brightness(final_image, mode="transparent_triangle")
 
     
     box = {
@@ -103,7 +105,7 @@ def generator(batch_size):
         y_trains = []
         # Create batch data.
         for i in range(batch_size):
-            image, labels = generate(angle=random.randint(0,359))
+            image, labels = generate(angle=random.randint(0,360))
 
             # Append
             x_trains.append(image)

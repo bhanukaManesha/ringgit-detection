@@ -11,14 +11,22 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("-f", "--file", dest="filename",
                         help="path to the file", metavar="file")
+    parser.add_argument("-m", "--model", dest="model",
+                        help="path to the model", metavar="model")
     args = parser.parse_args()
+
+    if args.filename == None:
+        print("-f path to file missing")
+        return
+    
+    if args.model == None:
+        print("-m path to model missing")
+        return
+
 
     # load the model
     try:
-        directory = "models/"
-        folders = [x[0] for x in os.walk(directory)]
-        folders.sort()
-        model = load_model(folders[-1])
+        model = load_model(args.model)
         model.summary()
         
     except:
@@ -60,11 +68,8 @@ def main():
                 image, labels = convert_data_to_image(x_data, y_data)
                 labels = non_maximum_supression(labels)
                 rendered = render_with_labels(image, labels, display = False)
-                # cv2.imwrite('output_tests/test_render_{:02d}.jpg'.format(r),rendered)
 
-                # rendered = np.uint8(rendered)
-
-                # # Display the resulting frame
+                # Display the resulting frame
                 cv2.imshow('Frame',rendered)
                 
                 # write the output frame to file

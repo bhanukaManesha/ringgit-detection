@@ -73,10 +73,10 @@ def convert_data_to_image(x_data, y_data):
             # Convert data.
             bx, by, bw, bh = d[1:5]
 
-            w = int(bw * WIDTH)
-            h = int(bh * HEIGHT)
-            x = abs(int(col * GRID_WIDTH + (bx * GRID_WIDTH - w/2)))
-            y = abs(int(row * GRID_HEIGHT + (by * GRID_HEIGHT - h/2)))
+            w = bw * WIDTH
+            h = bh * HEIGHT
+            x = col * GRID_WIDTH + (bx * GRID_WIDTH - w/2)
+            y = row * GRID_HEIGHT + (by * GRID_HEIGHT - h/2)
 
             s = CLASSES[np.argmax(d[5:])]
 
@@ -117,7 +117,7 @@ def non_maximum_supression(labels):
 
     for i in range(0,len(labels) - 1):
 
-        for j in range(i+1, len(labels) - 1):
+        for j in range(i+1, len(labels)):
 
             box1 = labels[i]
             box2 = labels[j]

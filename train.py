@@ -226,24 +226,24 @@ def get_model():
 
     SEED = 4
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
-        SEED = SEED * 2
+        SEED = SEED * 3
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        for _ in range(i):
-            x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
+        # for _ in range(i):
+        #     x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
+        #     x = BatchNormalization()(x)
+        #     x = Activation('relu')(x)
 
-            x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-            x = BatchNormalization()(x)
-            x = Activation('relu')(x)
+        #     x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
+        #     x = BatchNormalization()(x)
+        #     x = Activation('relu')(x)
             
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
     
-    SEED = SEED * 2
-    for i in range(2):
+    SEED = SEED * 4
+    for i in range(3):
         SEED = SEED // 2
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)

@@ -96,6 +96,8 @@ def generate(output_currency = "RM50", angle = 0) :
 
     image = random.choice(IMAGES)
 
+    
+
     # Generate the background
     background = generate_background()
 
@@ -106,8 +108,7 @@ def generate(output_currency = "RM50", angle = 0) :
     # Calculating the height and width
     height, width, channels = background.shape
 
-
-    random_size = random.uniform(0.75, 0.85)
+    random_size = random.uniform(0.7, 0.95)
     height_of_note = int(math.floor(height * random_size))
     width_of_note = int(math.floor(width * random_size))
 
@@ -123,8 +124,8 @@ def generate(output_currency = "RM50", angle = 0) :
     bounding_box_for_image = [default_box for i in range(GRID_X*GRID_Y)]
 
     # Calculate the x and y
-    # x_center = width * random.uniform(0.3, 0.7)
-    # y_center = height * random.uniform(0.3, 0.7)
+    # x_center = width * random.uniform(0.45, 0.55)
+    # y_center = height * random.uniform(0.45, 0.55)
     x_center = width * 0.5
     y_center = height * 0.5
 

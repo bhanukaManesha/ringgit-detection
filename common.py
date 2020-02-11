@@ -13,13 +13,13 @@ GRID_Y      = HEIGHT // GRID_HEIGHT
 
 
 # Training parameters
-SAMPLE = 200
+SAMPLE = 100
 BATCH  = 8
-EPOCH  = 200
+EPOCH  = 150
 
 # Inference parameters
-DETECTION_PARAMETER = 0.9
-NMS = 0.1
+DETECTION_PARAMETER = 0.5
+NMS = 0.3
 
 
 # Generator parameters

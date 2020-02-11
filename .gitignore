@@ -5,9 +5,6 @@ __pycache__/
 
 p2_sg.pem
 
-backup/
-
-data/
+demo_videos/
+output/
 models/
-output_tests/
-output_render/

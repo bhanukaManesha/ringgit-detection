@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-from common import *
-import tensorflow as tf
+from tensorflow import keras
 import cv2
-import os
 import numpy as np
-import random
-import math
-import imutils
-from uuid import uuid4
-import json
-import sys
-import copy
-import glob
-from itertools import combinations
-
 from common import *
+
+def load_model(model_path):
+
+    with open(model_path + "/model.json") as json_file:
+        json_config = json_file.read()
+
+    model = keras.models.model_from_json(json_config)
+    model.load_weights(model_path + "/model_weights.h5")
+
+    return model
+
+
 
 def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     # initialize the dimensions of the image to be resized and
@@ -50,143 +50,12 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     # return the resized image
     return resized
 
-def progress(count, total, suffix=''):
-    bar_len = 60
-    filled_len = int(round(bar_len * count / float(total)))
 
-    percents = round(100.0 * count / float(total), 1)
-    bar = '=' * filled_len + '-' * (bar_len - filled_len)
-
-    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', suffix))
-    sys.stdout.flush()
-
-
-def read_subimages(path_to_folder):
-    images = []
-    files = glob.glob(path_to_folder + "*.png")
-
-    for filename in files:
-        img = cv2.imread(filename, cv2.IMREAD_UNCHANGED)
-        if img is not None:
-            images.append(img)
-
-    return images, files
-
-
-def overlay_image(layer0_img, layer1_img, x, y):
-
-    height, width, channel = layer1_img.shape
-
-    layer0_img[y: y + height, x: x + width ] = layer1_img
-
-    return layer0_img
-
-def doOverlap(first, second): 
-    x_axis_not_overlap = False
-    y_axis_not_overlap = False
-
-    if(int(first["x1"]) > int(second["x2"]) or int(first["x2"]) < int(second["x1"])):
-        x_axis_not_overlap = True
-  
-    if(int(first["y1"]) > int(second["y2"]) or int(first["y2"]) < int(second["y1"])):
-        y_axis_not_overlap = True
-  
-    if x_axis_not_overlap and y_axis_not_overlap:
-        return False
-    else:
-        return True
-
-def overlay_transparent(background, overlay, x, y):
-
-    background_width = background.shape[1]
-    background_height = background.shape[0]
-
-    if x >= background_width or y >= background_height:
-        return background
-
-    h, w = overlay.shape[0], overlay.shape[1]
-
-    if x + w > background_width:
-        w = background_width - x
-        overlay = overlay[:, :w]
-
-    if y + h > background_height:
-        h = background_height - y
-        overlay = overlay[:h]
-
-    if overlay.shape[2] < 4:
-        overlay = np.concatenate(
-            [
-                overlay,
-                np.ones((overlay.shape[0], overlay.shape[1], 1), dtype = overlay.dtype) * 255
-            ],
-            axis = 2,
-        )
-
-    overlay_image = overlay[..., :3]
-    mask = overlay[..., 3:] / 255.0
-
-    background[y:y+h, x:x+w] = (1.0 - mask) * background[y:y+h, x:x+w] + mask * overlay_image
-
-    return background
-
-def rotate_image(mat, angle):
-    """
-    Rotates an image (angle in degrees) and expands image to avoid cropping
-    """
-
-    height, width = mat.shape[:2] # image shape has 3 dimensions
-    image_center = (width/2, height/2) # getRotationMatrix2D needs coordinates in reverse order (width, height) compared to shape
-
-    rotation_mat = cv2.getRotationMatrix2D(image_center, angle, 1.)
-
-    # rotation calculates the cos and sin, taking absolutes of those.
-    abs_cos = abs(rotation_mat[0,0]) 
-    abs_sin = abs(rotation_mat[0,1])
-
-    # find the new width and height bounds
-    bound_w = int(height * abs_sin + width * abs_cos)
-    bound_h = int(height * abs_cos + width * abs_sin)
-
-    # subtract old image center (bringing image back to origo) and adding the new image center coordinates
-    rotation_mat[0, 2] += bound_w/2 - image_center[0]
-    rotation_mat[1, 2] += bound_h/2 - image_center[1]
-
-    # rotate image with the new bounds and translated rotation matrix
-    rotated_mat = cv2.warpAffine(mat, rotation_mat, (bound_w, bound_h))
-    return rotated_mat
-
-def non_maximum_supression(labels):
-
-    remove_index = [0] * len(labels)
-    labels = sorted(labels, key=lambda label: label[2]) 
-
-    for i in range(0,len(labels) - 1):
-
-        for j in range(i+1, len(labels) - 1):
-
-            box1 = labels[i]
-            box2 = labels[j]
-
-            value = nms_iou(box1[1],box1[2],box1[3],box1[4],box2[1],box2[2],box2[3],box2[4])
-            
-            if value >= NMS and box1[0] > box2[0]:
-                remove_index[j] = 1
-            elif value >= NMS and box1[0] <= box2[0]:
-                remove_index[i] = 1
-            else:
-                pass
-
-    new_labels = []
-    for i in range(len(remove_index)):
-        if remove_index[i] == 0:
-            new_labels.append(labels[i])
-
-    return new_labels
 
 def convert_data_to_image(x_data, y_data):
     # Input.
     image = np.reshape(x_data, [HEIGHT, WIDTH, CHANNEL])
+
 
     # Labels
     labels = []
@@ -217,95 +86,9 @@ def convert_data_to_image(x_data, y_data):
 
     return image, labels
 
-def load_image_names(mode):
-
-    if mode == "train":
-        filename = "data/train/train.txt"
-    elif mode == "test":
-        filename = "data/test/test.txt"
-    elif mode == "valid":
-        filename = "data/validation/validation.txt"
-
-    with open(filename) as f:
-        image_paths = f.readlines()
-    image_paths = [x.strip() for x in image_paths]
-
-    if mode == "train":
-        image_paths = [x.replace("data/train/images/","") for x in image_paths]
-    elif mode == "test":
-        image_paths = [x.replace("data/test/images/","") for x in image_paths]
-    elif mode == "valid":
-        image_paths = [x.replace("data/validation/images/","") for x in image_paths]
-
-    image_paths = [x.replace(".jpg","") for x in image_paths]
-
-    return image_paths
-
-def read_data(mode):
-
-    if mode == "train":
-        image_path = "data/train/images/"
-    elif mode == "test":
-        image_path = "data/test/images/"
-    elif mode == "valid":
-        image_path = "data/validation/images/"
-
-    IMAGE_NAMES = load_image_names(mode=mode)
-    print('total.images: ', len(IMAGE_NAMES))
-
-    image_data = []
-    annotation_data = []
 
 
-    for image_name in IMAGE_NAMES:
-
-        image_type = ".jpg"
-
-        # print(image_path + image_name + image_type)
-        image = cv2.imread(image_path + image_name + image_type).astype(np.float32)/255.0
-
-        image_data.append(image)
-        
-        if mode == "train":
-            label_path = "data/train/labels/"
-        elif mode == "test":
-            label_path = "data/test/labels/"
-        elif mode == "valid":
-            label_path = "data/validation/labels/"
-
-        with open(label_path + image_name + ".txt") as f:
-            annotations = f.readlines()
-
-
-        annotations = [x.strip() for x in annotations]
-        annotations = [x.split() for x in annotations]
-        annotations = np.asarray(annotations)
-
-        y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
-
-        for row in range(GRID_X):
-            for col in range(GRID_Y):
-                y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
-                y_data[row, col, 1:5] = [
-                    float(annotations[row * GRID_X + col][2]),
-                    float(annotations[row * GRID_X + col][3]),
-                    float(annotations[row * GRID_X + col][4]),
-                    float(annotations[row * GRID_X + col][5])
-                ]
-                y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
-
-        annotation_data.append(y_data)
-
-    image_data = np.asarray(image_data)
-    annotation_data = np.asarray(annotation_data)
-
-    return image_data, annotation_data
-
-def load_image(images, labels):
-    num = random.randrange(0, len(images))
-    return images[num], labels[num]
-
-def render_with_labels(image, labels, display):
+def render_with_labels(image, labels, display = False):
     colors = {
         "RM50" : (0,255,0),
         "RM1" : (255,0,0),
@@ -326,6 +109,37 @@ def render_with_labels(image, labels, display):
 
     return image
 
+
+def non_maximum_supression(labels):
+
+    remove_index = [0] * len(labels)
+    labels = sorted(labels, key=lambda label: label[2]) 
+
+    for i in range(0,len(labels) - 1):
+
+        for j in range(i+1, len(labels) - 1):
+
+            box1 = labels[i]
+            box2 = labels[j]
+
+            value = nms_iou(box1[1],box1[2],box1[3],box1[4],box2[1],box2[2],box2[3],box2[4])
+            
+            if value >= NMS and box1[0] > box2[0]:
+                remove_index[j] = 1
+            elif value >= NMS and box1[0] <= box2[0]:
+                remove_index[i] = 1
+            else:
+                pass
+
+    new_labels = []
+    for i in range(len(remove_index)):
+        if remove_index[i] == 0:
+            new_labels.append(labels[i])
+
+    return new_labels
+
+
+
 def nms_iou(fx,fy,fw,fh,px,py,pw,ph):
     # IOU
     intersect = (np.minimum(fx+fw, px+pw) - np.maximum(fx, px)) * (np.minimum(fy+fh, py+ph) - np.maximum(fy, py))
@@ -333,44 +147,3 @@ def nms_iou(fx,fy,fw,fh,px,py,pw,ph):
     return intersect/union
 
 
-
-def load_images_from_directory(path):
-
-    image_paths = glob.glob(path + "images/*.jpg")
-    label_paths = glob.glob(path + "labels/*.txt")
-
-    image_paths.sort()
-    label_paths.sort()
-
-    x_train = []
-    y_train = []
-
-    for path in image_paths:
-        image = cv2.imread(path).astype(np.float32)
-        x_train.append(image)
-
-    if len(label_paths) > 0:
-        for path in label_paths:
-            with open(path) as f:
-                annotations = f.readlines()
-
-            annotations = [x.strip() for x in annotations]
-            annotations = [x.split() for x in annotations]
-            annotations = np.asarray(annotations)
-
-            y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
-
-            for row in range(GRID_X):
-                for col in range(GRID_Y):
-                    y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
-                    y_data[row, col, 1:5] = [
-                        float(annotations[row * GRID_X + col][2]),
-                        float(annotations[row * GRID_X + col][3]),
-                        float(annotations[row * GRID_X + col][4]),
-                        float(annotations[row * GRID_X + col][5])
-                    ]
-                    y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
-
-            y_train.append(y_data)
-
-    return x_train,y_train

@@ -5,10 +5,4 @@ __pycache__/
 
 p2_sg.pem
 
-tf2/
-
-data/
-models/
-output_tests/
-demo_videos/
-test_data/
+backup/

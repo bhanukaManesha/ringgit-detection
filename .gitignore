@@ -10,3 +10,4 @@ backup/
 data/
 models/
 output_tests/
+output_render/

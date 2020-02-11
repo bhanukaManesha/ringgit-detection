@@ -230,14 +230,14 @@ def get_model():
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        # for _ in range(i):
-        #     x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-        #     x = BatchNormalization()(x)
-        #     x = Activation('relu')(x)
+        for _ in range(i):
+            x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
+            x = BatchNormalization()(x)
+            x = Activation('relu')(x)
 
-        #     x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-        #     x = BatchNormalization()(x)
-        #     x = Activation('relu')(x)
+            x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
+            x = BatchNormalization()(x)
+            x = Activation('relu')(x)
             
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
@@ -276,7 +276,7 @@ def main():
 
     # ---------- Train
     x_train_1,y_train_1 = load_images_from_directory(validation_path)
-    x_train_2,y_train_2 = next(generator(5))
+    x_train_2,y_train_2 = next(generator(10))
 
     x_val = np.concatenate((np.asarray(x_train_1),np.asarray(x_train_2)), axis=0)
     y_val = np.concatenate((np.asarray(y_train_1),np.asarray(y_train_2)), axis=0)
@@ -294,7 +294,7 @@ def main():
 
     x_test,_ = load_images_from_directory(test_path)
 
-    x_test = np.concatenate((np.asarray(x_train_1),np.asarray(x_test)),axis=0)
+    x_test = np.concatenate((np.asarray(x_train_2),np.asarray(x_test)),axis=0)
 
     # Remove the folder
     shutil.rmtree("output_tests/")

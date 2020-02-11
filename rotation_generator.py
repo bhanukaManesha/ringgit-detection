@@ -10,7 +10,7 @@ def generate_geometrical_noise(image):
     
 
     # # Draw line.
-    for _ in range(10):
+    for _ in range(20):
         x1 = random.randint(0, width)
         y1 = random.randint(0, height)
         x2 = random.randint(0, width)
@@ -69,7 +69,7 @@ def change_brightness(image, mode = "uniform"):
         
 
 
-def generate_background(mode = "noise"):
+def generate_background(mode = "geometric"):
     
     if mode == "white" :
 
@@ -107,7 +107,7 @@ def generate(output_currency = "RM50", angle = 0) :
     height, width, channels = background.shape
 
 
-    random_size = random.uniform(0.6, 0.8)
+    random_size = random.uniform(0.75, 0.85)
     height_of_note = int(math.floor(height * random_size))
     width_of_note = int(math.floor(width * random_size))
 
@@ -180,13 +180,16 @@ def generate(output_currency = "RM50", angle = 0) :
 
 def generator(batch_size):
 
+    angles = [0,22,45,67,90,112,135,157,180,202,225,247,270,292,315,337]
+
     while True:
         # Empty batch arrays.
         x_trains = []
         y_trains = []
         # Create batch data.
         for i in range(batch_size):
-            image, labels = generate(angle=random.randint(0,360))
+
+            image, labels = generate(angle=random.choice(angles))
 
             # Append
             x_trains.append(image)

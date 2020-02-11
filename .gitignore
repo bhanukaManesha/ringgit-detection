@@ -6,3 +6,7 @@ __pycache__/
 p2_sg.pem
 
 backup/
+
+data/
+models/
+output_tests/

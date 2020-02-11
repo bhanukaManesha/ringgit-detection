@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 import tensorflow as tf
 from tensorflow import keras
 from train import *
@@ -18,13 +18,10 @@ def main(model_path):
 
     model = load_model(model_path)
 
-    x_test, y_test = next(generator(32))
-
-    real_x_train,real_y_train = load_images_from_directory("test/")
-    x_val = np.concatenate((np.asarray(real_x_train),np.asarray(x_test)), axis=0)
-    y_val = np.concatenate((np.asarray(real_y_train),np.asarray(y_test)), axis=0)
-
-
+    x_train_1,y_train_1 = load_images_from_directory(validation_path)
+    x_train_2,y_train_2 = next(generator(5))
+    x_test,_ = load_images_from_directory(test_path)
+    x_test = np.concatenate((np.asarray(x_train_1),np.asarray(x_train_2),np.asarray(x_test)),axis=0)
 
     # Remove the folder
     shutil.rmtree("output_tests/")
@@ -35,17 +32,16 @@ def main(model_path):
         os.makedirs(directory)
     
 
-    results = model.predict(x_val)
+    results = model.predict(x_test)
 
     # Plot training
     for r in range(len(results)):
-        x_data = x_val[r]
+        x_data = x_test[r]
         y_data = results[r]
-        # y_data = y_val[r]
 
-        image, texts = convert_data_to_image(x_data, y_data)
-        texts = non_maximum_supression(texts)
-        rendered = render_with_labels(image, texts, display = False)
+        image, labels = convert_data_to_image(x_data, y_data)
+        labels = non_maximum_supression(labels)
+        rendered = render_with_labels(image, labels, display = False)
         cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
 
 

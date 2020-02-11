@@ -2,7 +2,90 @@ from common import *
 from utils import *
 
 # Read the images
-IMAGES, _ = read_subimages(MONEY_PATH)
+IMAGES, _ = read_subimages(money_path)
+
+
+def generate_geometrical_noise(image):
+    height, width, depth = image.shape
+    
+
+    # # Draw line.
+    for _ in range(10):
+        x1 = random.randint(0, width)
+        y1 = random.randint(0, height)
+        x2 = random.randint(0, width)
+        y2 = random.randint(0, height)
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+        thickness = random.randint(1, 5)
+
+        image = cv2.line(image, (x1,y1), (x2,y2), (r,g,b), thickness) 
+
+    # Draw rect.
+    for _ in range(20):
+        x1 = random.randint(0, width)
+        y1 = random.randint(0, height)
+        x2 = random.randint(0, width)
+        y2 = random.randint(0, height)
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+        thickness = random.randint(1, 3)
+
+        image = cv2.rectangle(image, (x1,y1), (x2,y2), (r,g,b), thickness)
+
+    # Draw circle.
+    for _ in range(20):
+        x1 = random.randint(-width//2, width+width//2)
+        y1 = random.randint(-height//2, height+height//2)
+        radius = random.randint(0, width)
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+        thickness = random.randint(1, 3)
+
+        image = cv2.circle(image, (x1,y1), radius, (r,g,b), thickness) 
+
+    return image
+
+
+def change_brightness(image, mode = "uniform"):
+
+    if mode == "uniform":
+        image = image * random.uniform(0.5, 1.5)
+        return np.clip(final_image,a_min = 0, a_max = 255.0)
+
+    if mode == "transparent_triangle":
+
+        pt1 = (random.randint(0,WIDTH), random.randint(0,HEIGHT))
+        pt2 = (random.randint(0,WIDTH), random.randint(0,HEIGHT))
+        pt3 = (random.randint(0,WIDTH), random.randint(0,HEIGHT))
+
+        triangle_cnt = np.array( [pt1, pt2, pt3] )
+        shape = cv2.drawContours(np.full((HEIGHT,WIDTH,CHANNEL), 255.), [triangle_cnt], 0, (0,0,0), -1)
+
+        return cv2.addWeighted(shape,0.3,image,0.7,0)
+        
+
+
+def generate_background(mode = "noise"):
+    
+    if mode == "white" :
+
+        return np.full((HEIGHT,WIDTH,CHANNEL), 255.)
+
+    elif mode== "black" :
+
+        return np.full((HEIGHT,WIDTH,CHANNEL), 0.)
+
+    elif mode == "noise" :
+        return np.random.randint(256, size=(HEIGHT, WIDTH,CHANNEL))
+
+    elif mode == 'geometric':
+        
+        return generate_geometrical_noise(np.full((HEIGHT,WIDTH,CHANNEL), 0.))
+
 
 def generate(output_currency = "RM50", angle = 0) :
     '''
@@ -95,8 +178,6 @@ def generate(output_currency = "RM50", angle = 0) :
 
     return final_image,labels
 
-
-
 def generator(batch_size):
 
     while True:
@@ -117,20 +198,16 @@ def generator(batch_size):
 
 
 if __name__ == "__main__" :
-    # generate_multiple_angles()
 
-    x_train,y_train = next(generator(8))
+    x_train,y_train = next(generator(50))
 
     for i in range(len(x_train)):
         x_data = x_train[i]
         y_data = y_train[i]
 
         image, label = convert_data_to_image(x_data, y_data)
-
         image = cv2.UMat(image).get()
-
         rendered = render_with_labels(image, label, display = False)
-
-        cv2.imwrite('output_tests/test_render_{:02d}.png'.format(i),rendered)
+        cv2.imwrite('output_render/test_render_{:02d}.png'.format(i),rendered)
 
 

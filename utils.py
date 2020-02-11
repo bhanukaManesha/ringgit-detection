@@ -50,89 +50,6 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     # return the resized image
     return resized
 
-def generate_geometrical_noise(image):
-    height, width, depth = image.shape
-    
-
-    # # Draw line.
-    for _ in range(10):
-        x1 = random.randint(0, width)
-        y1 = random.randint(0, height)
-        x2 = random.randint(0, width)
-        y2 = random.randint(0, height)
-        r = random.randint(0, 255)
-        g = random.randint(0, 255)
-        b = random.randint(0, 255)
-        thickness = random.randint(1, 5)
-
-        image = cv2.line(image, (x1,y1), (x2,y2), (r,g,b), thickness) 
-
-    # Draw rect.
-    for _ in range(20):
-        x1 = random.randint(0, width)
-        y1 = random.randint(0, height)
-        x2 = random.randint(0, width)
-        y2 = random.randint(0, height)
-        r = random.randint(0, 255)
-        g = random.randint(0, 255)
-        b = random.randint(0, 255)
-        thickness = random.randint(1, 3)
-
-        image = cv2.rectangle(image, (x1,y1), (x2,y2), (r,g,b), thickness)
-
-    # Draw circle.
-    for _ in range(20):
-        x1 = random.randint(-width//2, width+width//2)
-        y1 = random.randint(-height//2, height+height//2)
-        radius = random.randint(0, width)
-        r = random.randint(0, 255)
-        g = random.randint(0, 255)
-        b = random.randint(0, 255)
-        thickness = random.randint(1, 3)
-
-        image = cv2.circle(image, (x1,y1), radius, (r,g,b), thickness) 
-
-    return image
-
-def change_brightness(image, mode = "uniform"):
-
-    if mode == "uniform":
-        image = image * random.uniform(0.5, 1.5)
-        return np.clip(final_image,a_min = 0, a_max = 255.0)
-
-    if mode == "transparent_triangle":
-
-        pt1 = (random.randint(0,WIDTH), random.randint(0,HEIGHT))
-        pt2 = (random.randint(0,WIDTH), random.randint(0,HEIGHT))
-        pt3 = (random.randint(0,WIDTH), random.randint(0,HEIGHT))
-
-        triangle_cnt = np.array( [pt1, pt2, pt3] )
-        shape = cv2.drawContours(np.full((HEIGHT,WIDTH,CHANNEL), 255.), [triangle_cnt], 0, (0,0,0), -1)
-
-        return cv2.addWeighted(shape,0.3,image,0.7,0)
-        
-
-
-def generate_background(mode = "noise"):
-    
-    if mode == "white" :
-
-        return np.full((HEIGHT,WIDTH,CHANNEL), 255.)
-
-    elif mode== "black" :
-
-        return np.full((HEIGHT,WIDTH,CHANNEL), 0.)
-
-    elif mode == "noise" :
-        return np.random.randint(256, size=(HEIGHT, WIDTH,CHANNEL))
-
-    elif mode == 'geometric':
-        
-        return generate_geometrical_noise(np.full((HEIGHT,WIDTH,CHANNEL), 0.))
-
-
-
-
 def progress(count, total, suffix=''):
     bar_len = 60
     filled_len = int(round(bar_len * count / float(total)))
@@ -242,23 +159,20 @@ def rotate_image(mat, angle):
 def non_maximum_supression(labels):
 
     remove_index = [0] * len(labels)
-
     labels = sorted(labels, key=lambda label: label[2]) 
-    # print(labels)
+
     for i in range(0,len(labels) - 1):
 
         for j in range(i+1, len(labels) - 1):
 
-            # print(i,j)
-
             box1 = labels[i]
             box2 = labels[j]
 
-            value = iou(box1[1],box1[2],box1[3],box1[4],box2[1],box2[2],box2[3],box2[4])
+            value = nms_iou(box1[1],box1[2],box1[3],box1[4],box2[1],box2[2],box2[3],box2[4])
             
-            if value >= 0.1 and box1[0] > box2[0]:
+            if value >= NMS and box1[0] > box2[0]:
                 remove_index[j] = 1
-            elif value >= 0.1 and box1[0] <= box2[0]:
+            elif value >= NMS and box1[0] <= box2[0]:
                 remove_index[i] = 1
             else:
                 pass
@@ -268,7 +182,6 @@ def non_maximum_supression(labels):
         if remove_index[i] == 0:
             new_labels.append(labels[i])
 
-    # print(new_labels)
     return new_labels
 
 def convert_data_to_image(x_data, y_data):
@@ -298,7 +211,7 @@ def convert_data_to_image(x_data, y_data):
 
             s = CLASSES[np.argmax(d[5:])]
 
-            print([d[0],x,y,w,h,s])
+            # print([d[0],x,y,w,h,s])
             # labels
             labels.append([d[0],x,y,w,h,s])
 
@@ -325,7 +238,6 @@ def load_image_names(mode):
         image_paths = [x.replace("data/validation/images/","") for x in image_paths]
 
     image_paths = [x.replace(".jpg","") for x in image_paths]
-
 
     return image_paths
 
@@ -405,7 +317,7 @@ def render_with_labels(image, labels, display):
     for label in labels:
         # cv2.rectangle(image,(0,0),(5,5),(0,255,0),2)
         cv2.rectangle(image, (int(label[1]),int(label[2])), (int(label[1]+label[3]),int(label[2]+label[4])), colors[label[5]], 2)
-        cv2.putText(image, label[5], (label[1], label[2]-1), cv2.FONT_HERSHEY_SIMPLEX, 0.3, colors[label[5]], 1)
+        # cv2.putText(image, label[5], (label[1], label[2]-1), cv2.FONT_HERSHEY_SIMPLEX, 0.3, colors[label[5]], 1)
 
     if display:
         cv2.imshow('image',image)
@@ -414,33 +326,51 @@ def render_with_labels(image, labels, display):
 
     return image
 
-def calculate_iou(fact,pred):
-    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
-    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
-    # Truth
-    fact_conf = fact[:,:,0]
-    fw = fact[:,:,3] * WIDTH
-    fh = fact[:,:,4] * HEIGHT
-    fx = fact[:,:,0] * GRID_WIDTH - fw/2
-    fy = fact[:,:,1] * GRID_HEIGHT - fh/2
-    # Prediction
-    pw = pred[:,:,3] * WIDTH
-    ph = pred[:,:,4] * HEIGHT
-    px = pred[:,:,0] * GRID_WIDTH - pw/2
-    py = pred[:,:,1] * GRID_HEIGHT - ph/2
-    # IOU
-    intersect = (tf.minimum(fx+fw, px+pw) - tf.maximum(fx, px)) * (tf.minimum(fy+fh, py+ph) - tf.maximum(fy, py))
-    union = (fw * fh) + (pw * ph) - intersect
-    nonzero_count = tf.math.count_nonzero(fact_conf, dtype=tf.float32)
-    return (intersect/union)
-    # return switch(
-    #     tf.equal(nonzero_count, 0),
-    #     1.0,
-    #     sum((intersect / union) * fact_conf) / nonzero_count
-    # )
-
-def iou(fx,fy,fw,fh,px,py,pw,ph):
+def nms_iou(fx,fy,fw,fh,px,py,pw,ph):
     # IOU
     intersect = (np.minimum(fx+fw, px+pw) - np.maximum(fx, px)) * (np.minimum(fy+fh, py+ph) - np.maximum(fy, py))
     union = (fw * fh) + (pw * ph) - intersect
-    return (intersect/union)
+    return intersect/union
+
+
+
+def load_images_from_directory(path):
+
+    image_paths = glob.glob(path + "images/*.jpg")
+    label_paths = glob.glob(path + "labels/*.txt")
+
+    image_paths.sort()
+    label_paths.sort()
+
+    x_train = []
+    y_train = []
+
+    for path in image_paths:
+        image = cv2.imread(path).astype(np.float32)
+        x_train.append(image)
+
+    if len(label_paths) > 0:
+        for path in label_paths:
+            with open(path) as f:
+                annotations = f.readlines()
+
+            annotations = [x.strip() for x in annotations]
+            annotations = [x.split() for x in annotations]
+            annotations = np.asarray(annotations)
+
+            y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
+
+            for row in range(GRID_X):
+                for col in range(GRID_Y):
+                    y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
+                    y_data[row, col, 1:5] = [
+                        float(annotations[row * GRID_X + col][2]),
+                        float(annotations[row * GRID_X + col][3]),
+                        float(annotations[row * GRID_X + col][4]),
+                        float(annotations[row * GRID_X + col][5])
+                    ]
+                    y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
+
+            y_train.append(y_data)
+
+    return x_train,y_train

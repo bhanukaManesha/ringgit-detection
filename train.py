@@ -70,34 +70,33 @@ def loss(fact, pred):
     # --- Total loss
     return sum(conf_loss + box_loss + cat_loss, axis=-1)
 
-
-def P_(fact, pred):
+def PR_(fact,pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     # Truth
     fact_conf = fact[:,:,0]
+    fw = fact[:,:,3] * WIDTH
+    fh = fact[:,:,4] * HEIGHT
+    fx = fact[:,:,0] * GRID_WIDTH - fw/2
+    fy = fact[:,:,1] * GRID_HEIGHT - fh/2
+    
     # Prediction
-    pred_conf = pred[:,:,0]
-    # PROBABILITY
-    return binary_accuracy(fact_conf, pred_conf,threshold=0.8)
+    pred_conf = fact[:,:,0]
+    pw = pred[:,:,3] * WIDTH
+    ph = pred[:,:,4] * HEIGHT
+    px = pred[:,:,0] * GRID_WIDTH - pw/2
+    py = pred[:,:,1] * GRID_HEIGHT - ph/2
 
-def Precision_(fact,pred):
-    iou = calculate_iou(fact,pred)
+    # IOU
+    intersect = (tf.minimum(fx+fw, px+pw) - tf.maximum(fx, px)) * (tf.minimum(fy+fh, py+ph) - tf.maximum(fy, py))
+    union = (fw * fh) + (pw * ph) - intersect
+    iou =  (intersect/union)
 
-    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
-    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    detection = tf.cast(pred_conf >= DETECTION_PARAMETER, dtype=tf.float32)
+    no_detection = tf.cast(pred_conf < DETECTION_PARAMETER, dtype=tf.float32)
 
-
-    fact_conf = fact[:,:,0]
-    pred_conf = pred[:,:,0]
-
-    # total = tf.math.count_nonzero(fact_conf, dtype=tf.float32)
-
-    detection = tf.cast(pred_conf >= 0.75, dtype=tf.float32)
-    no_detection = tf.cast(pred_conf < 0.75, dtype=tf.float32)
-
-    iou_greater = tf.cast(iou >= 0.75, dtype=tf.float32)
-    iou_less = tf.cast(iou < 0.75, dtype=tf.float32)
+    iou_greater = tf.cast(iou >= DETECTION_PARAMETER, dtype=tf.float32)
+    iou_less = tf.cast(iou < DETECTION_PARAMETER, dtype=tf.float32)
 
     tp = tf.math.count_nonzero(detection * iou_greater, dtype=tf.float32, axis=1)
     fp = tf.math.count_nonzero(detection * iou_less, dtype=tf.float32, axis=1)
@@ -106,23 +105,40 @@ def Precision_(fact,pred):
 
     precision = (tp / (tp + fp))
     
-    return switch(tf.equal(tf.math.reduce_mean(precision), 0),0.0,tf.math.reduce_mean(precision))
+    return switch(
+        tf.equal(tf.math.reduce_mean(precision), 0),
+        0.0,
+        tf.math.reduce_mean(precision)
+        )
 
-def Recall_(fact,pred):
-    iou = calculate_iou(fact,pred)
+def RC_(fact,pred):
 
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
-
-
+    # Truth
     fact_conf = fact[:,:,0]
-    pred_conf = pred[:,:,0]
+    fw = fact[:,:,3] * WIDTH
+    fh = fact[:,:,4] * HEIGHT
+    fx = fact[:,:,0] * GRID_WIDTH - fw/2
+    fy = fact[:,:,1] * GRID_HEIGHT - fh/2
+    
+    # Prediction
+    pred_conf = fact[:,:,0]
+    pw = pred[:,:,3] * WIDTH
+    ph = pred[:,:,4] * HEIGHT
+    px = pred[:,:,0] * GRID_WIDTH - pw/2
+    py = pred[:,:,1] * GRID_HEIGHT - ph/2
 
-    detection = tf.cast(pred_conf >= 0.75, dtype=tf.float32)
-    no_detection = tf.cast(pred_conf < 0.75, dtype=tf.float32)
+    # IOU
+    intersect = (tf.minimum(fx+fw, px+pw) - tf.maximum(fx, px)) * (tf.minimum(fy+fh, py+ph) - tf.maximum(fy, py))
+    union = (fw * fh) + (pw * ph) - intersect
+    iou =  (intersect/union)
 
-    iou_greater = tf.cast(iou >= 0.75, dtype=tf.float32)
-    iou_less = tf.cast(iou < 0.75, dtype=tf.float32)
+    detection = tf.cast(pred_conf >= DETECTION_PARAMETER, dtype=tf.float32)
+    no_detection = tf.cast(pred_conf < DETECTION_PARAMETER, dtype=tf.float32)
+
+    iou_greater = tf.cast(iou >= DETECTION_PARAMETER, dtype=tf.float32)
+    iou_less = tf.cast(iou < DETECTION_PARAMETER, dtype=tf.float32)
 
     tp = tf.math.count_nonzero(detection * iou_greater, dtype=tf.float32, axis=1)
 
@@ -133,31 +149,37 @@ def Recall_(fact,pred):
     total = tf.math.count_nonzero(fact_conf, dtype=tf.float32, axis=1)
 
     recall = tp / total
-
-    # print('cat_loss.shape: ', precision.shape)    
     
-    return switch(tf.equal(tf.math.reduce_mean(recall), 0),0.0,tf.math.reduce_mean(recall))
+    return switch(
+        tf.equal(tf.math.reduce_mean(recall), 0),
+        0.0,
+        tf.math.reduce_mean(recall)
+        )
 
 def XY_(fact, pred):
+
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+
     # Truth
     fact_conf = fact[:,:,0]
     fw = fact[:,:,3] * WIDTH
     fh = fact[:,:,4] * HEIGHT
     fx = fact[:,:,0] * GRID_WIDTH - fw/2
     fy = fact[:,:,1] * GRID_HEIGHT - fh/2
+
     # Prediction
     pw = pred[:,:,3] * WIDTH
     ph = pred[:,:,4] * HEIGHT
     px = pred[:,:,0] * GRID_WIDTH - pw/2
     py = pred[:,:,1] * GRID_HEIGHT - ph/2
+
     # IOU
     intersect = (tf.minimum(fx+fw, px+pw) - tf.maximum(fx, px)) * (tf.minimum(fy+fh, py+ph) - tf.maximum(fy, py))
     union = (fw * fh) + (pw * ph) - intersect
     nonzero_count = tf.math.count_nonzero(fact_conf, dtype=tf.float32, axis=1)
 
-    # print('nonzero: ', nonzero_count.shape) 
+
     o = sum((intersect / union) * fact_conf , axis = 1) / nonzero_count
     h = tf.math.reduce_mean(o)
 
@@ -189,7 +211,7 @@ class HistoryCheckpoint(keras.callbacks.Callback):
         with open('{}/history.txt'.format(self.folder), 'w') as f:
             self.model.summary(print_fn=lambda x: f.write(x + '\n'))
     def on_epoch_end(self, epoch, logs={}):
-        keys = ['loss', 'Precision_', 'Recall_','XY_']
+        keys = ['loss', 'PR_', 'RC_','XY_']
         h = ' - '. join(['{}: {:.4f}'.format(k, logs[k]) for k in keys])
         h = h + ' // ' + ' - '. join(['val_{}: {:.4f}'.format(k, logs['val_'+k]) for k in keys])
         h = '{:03d} : '.format(epoch) + h
@@ -204,7 +226,7 @@ def get_model():
 
     SEED = 4
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
-        SEED = SEED * 3
+        SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
@@ -232,55 +254,8 @@ def get_model():
     x = Activation('sigmoid')(x)
 
     model = Model(input_layer, x)
-
-    # sgd = SGD(lr=0.1, decay=0.0005, momentum=0.9, nesterov=True)
-
-    model.compile(optimizer="adam", loss=loss, metrics=[Precision_,Recall_,XY_])
+    model.compile(optimizer="adam", loss=loss, metrics=[PR_,RC_,XY_])
     return model
-
-def load_images_from_directory(path):
-
-    image_paths = glob.glob(path + "images/*.jpg")
-    label_paths = glob.glob(path + "labels/*.txt")
-
-    image_paths.sort()
-    label_paths.sort()
-
-    x_train = []
-    y_train = []
-
-    
-    for path in image_paths:
-        # print(path)
-        image = cv2.imread(path).astype(np.float32)
-        x_train.append(image)
-
-
-    for path in label_paths:
-        # print(path)
-        with open(path) as f:
-            annotations = f.readlines()
-
-        annotations = [x.strip() for x in annotations]
-        annotations = [x.split() for x in annotations]
-        annotations = np.asarray(annotations)
-
-        y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
-
-        for row in range(GRID_X):
-            for col in range(GRID_Y):
-                y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
-                y_data[row, col, 1:5] = [
-                    float(annotations[row * GRID_X + col][2]),
-                    float(annotations[row * GRID_X + col][3]),
-                    float(annotations[row * GRID_X + col][4]),
-                    float(annotations[row * GRID_X + col][5])
-                ]
-                y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
-
-        y_train.append(y_data)
-
-    return x_train,y_train
 
 def main():
 
@@ -300,11 +275,11 @@ def main():
     model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
     # ---------- Train
-    x_test, y_test = next(generator(32))
+    x_train_1,y_train_1 = load_images_from_directory(validation_path)
+    x_train_2,y_train_2 = next(generator(5))
 
-    real_x_train,real_y_train = load_images_from_directory("real/")
-    x_val = np.concatenate((np.asarray(real_x_train),np.asarray(x_test)), axis=0)
-    y_val = np.concatenate((np.asarray(real_y_train),np.asarray(y_test)), axis=0)
+    x_val = np.concatenate((np.asarray(x_train_1),np.asarray(x_train_2)), axis=0)
+    y_val = np.concatenate((np.asarray(y_train_1),np.asarray(y_train_2)), axis=0)
 
 
     model.fit(
@@ -317,6 +292,10 @@ def main():
     
     # ---------- Test
 
+    x_test,_ = load_images_from_directory(test_path)
+
+    x_test = np.concatenate((np.asarray(x_train_1),np.asarray(x_test)),axis=0)
+
     # Remove the folder
     shutil.rmtree("output_tests/")
     
@@ -326,36 +305,19 @@ def main():
         os.makedirs(directory)
     
 
-    results = model.predict(x_val)
+    results = model.predict(x_test)
 
     # Plot training
     for r in range(len(results)):
-        x_data = x_val[r]
+        x_data = x_test[r]
         y_data = results[r]
-        # y_data = y_val[r]
 
-        image, texts = convert_data_to_image(x_data, y_data)
-        print(len(texts))
-        texts = non_maximum_supression(texts)
-        rendered = render_with_labels(image, texts, display = False)
+        image, labels = convert_data_to_image(x_data, y_data)
+        labels = non_maximum_supression(labels)
+        rendered = render_with_labels(image, labels, display = False)
         cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
 
 if __name__ == '__main__':
     main()
-
-    # k = [
-    #     [0.9520847, 11, 6, 41, 38, 'RM50'],
-    #     [0.9994442, 21, 2, 37, 44, 'RM50'],
-    #     [0.87747, 28, 3, 41, 45, 'RM50'],
-    #     [0.99999964, 8, 10, 48, 43, 'RM50'],
-    #     [0.99628925, 0, 19, 47, 42, 'RM50'],
-    #     [0.81187415, 4, 28, 43, 42, 'RM50'],
-    #     [0.8049084, 3, 28, 44, 42, 'RM50'],
-    #     [0.9836606, 9, 28, 45, 39, 'RM50'],
-    #     [0.9574118, 18, 30, 44, 37, 'RM50'],
-    #     [0.8192027, 11, 44, 41, 26, 'RM50']
-    # ]
-    
-    # non_maximum_supression(k)
 
 

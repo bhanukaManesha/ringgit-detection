@@ -101,7 +101,7 @@ def generate(output_currency = "RM50") :
     # Calculating the height and width
     height, width, channels = background.shape
 
-    random_size = random.uniform(0.7, 0.95)
+    random_size = random.uniform(0.7, 0.8)
     height_of_note = int(math.floor(height * random_size))
     width_of_note = int(math.floor(width * random_size))
 

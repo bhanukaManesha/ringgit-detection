@@ -17,7 +17,7 @@ RHEIGHT = int(378)
 # Training parameters
 SAMPLE = 100
 BATCH  = 8
-EPOCH  = 150
+EPOCH  = 250
 
 # Inference parameters
 DETECTION_PARAMETER = 0.5

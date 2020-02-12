@@ -418,8 +418,8 @@ def convert_data_to_yolo(image, polygons):
 def augmentation(aimage, apolygons):
     # Augmentation.
     seq = iaa.Sequential([
-        iaa.PerspectiveTransform(scale=(0.01, 0.025)),
-        iaa.Rotate(rotate=(10, 40)),
+        iaa.PerspectiveTransform(scale=(0.01, 0.05), keep_size=True),
+        iaa.Rotate(rotate=(0, 360)),
         # iaa.Affine(scale=(0.9, 1.1), translate_percent=(-0.1, 0.1)),
         # iaa.GammaContrast((0.8, 1.2)),
         iaa.Resize({'width': WIDTH, 'height': HEIGHT}, interpolation=cv2.INTER_AREA),

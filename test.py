@@ -17,19 +17,19 @@ def load_model(model_path):
 def main(model_path):
 
     model = load_model(model_path)
-    
+
     x_train_2,y_train_2 = next(generator(10))
-    x_test,_ = load_images_from_directory(test_path)
+    x_test,_ = load_images_from_directory(validation_path)
     x_test = np.concatenate((np.asarray(x_train_2),np.asarray(x_test)),axis=0)
 
     # Remove the folder
     shutil.rmtree("output_tests/")
-    
+
     # Create a folder
     directory = "output_tests"
     if not os.path.exists(directory):
         os.makedirs(directory)
-    
+
 
     results = model.predict(x_test)
 

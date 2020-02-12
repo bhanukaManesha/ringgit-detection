@@ -56,16 +56,16 @@ def loss(fact, pred):
     conf_loss = tf.square(fact_conf - pred_conf)
     # print('conf', conf_loss)
     conf_loss = (mask_obj * conf_loss) + (mask_noobj * conf_loss)
-    
+
     # --- Box loss
     xy_loss  = tf.square(fact_x - pred_x) + tf.square(fact_y - pred_y)
     wh_loss  = tf.square(tf.sqrt(fact_w) - tf.sqrt(pred_w)) + tf.square(tf.sqrt(fact_h) - tf.sqrt(pred_h))
-    box_loss = 5 * mask_obj * (xy_loss + wh_loss) 
+    box_loss = 5 * mask_obj * (xy_loss + wh_loss)
     # print('box_loss.shape: ', box_loss.shape)
 
     # --- Category loss
     cat_loss = mask_obj * sum(tf.square(fact_cat - pred_cat), axis=-1)
-    # print('cat_loss.shape: ', cat_loss.shape)    
+    # print('cat_loss.shape: ', cat_loss.shape)
 
     # --- Total loss
     return sum(conf_loss + box_loss + cat_loss, axis=-1)
@@ -79,7 +79,7 @@ def PR_(fact,pred):
     fh = fact[:,:,4] * HEIGHT
     fx = fact[:,:,0] * GRID_WIDTH - fw/2
     fy = fact[:,:,1] * GRID_HEIGHT - fh/2
-    
+
     # Prediction
     pred_conf = fact[:,:,0]
     pw = pred[:,:,3] * WIDTH
@@ -101,10 +101,10 @@ def PR_(fact,pred):
     tp = tf.math.count_nonzero(detection * iou_greater, dtype=tf.float32, axis=1)
     fp = tf.math.count_nonzero(detection * iou_less, dtype=tf.float32, axis=1)
 
-    fn = tf.math.count_nonzero(no_detection * fact_conf, dtype=tf.float32, axis=1) 
+    fn = tf.math.count_nonzero(no_detection * fact_conf, dtype=tf.float32, axis=1)
 
     precision = (tp / (tp + fp))
-    
+
     return switch(
         tf.equal(tf.math.reduce_mean(precision), 0),
         0.0,
@@ -121,7 +121,7 @@ def RC_(fact,pred):
     fh = fact[:,:,4] * HEIGHT
     fx = fact[:,:,0] * GRID_WIDTH - fw/2
     fy = fact[:,:,1] * GRID_HEIGHT - fh/2
-    
+
     # Prediction
     pred_conf = fact[:,:,0]
     pw = pred[:,:,3] * WIDTH
@@ -144,12 +144,12 @@ def RC_(fact,pred):
 
     fp = tf.math.count_nonzero(detection * iou_less, dtype=tf.float32, axis=1)
 
-    fn = tf.math.count_nonzero(no_detection * fact_conf, dtype=tf.float32, axis=1) 
-    
+    fn = tf.math.count_nonzero(no_detection * fact_conf, dtype=tf.float32, axis=1)
+
     total = tf.math.count_nonzero(fact_conf, dtype=tf.float32, axis=1)
 
     recall = tp / total
-    
+
     return switch(
         tf.equal(tf.math.reduce_mean(recall), 0),
         0.0,
@@ -184,7 +184,6 @@ def XY_(fact, pred):
     h = tf.math.reduce_mean(o)
 
     return switch(tf.equal(h, 0),0.0,h)
-
 
 def C_(fact, pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -238,10 +237,10 @@ def get_model():
         #     x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
         #     x = BatchNormalization()(x)
         #     x = Activation('relu')(x)
-            
+
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
-    
+
     SEED = SEED * 4
     for i in range(3):
         SEED = SEED // 2
@@ -289,21 +288,21 @@ def main():
         validation_data=(x_val, y_val),
         shuffle=True,
         callbacks=[model_checkpoint, history_checkpoint])
-    
+
     # ---------- Test
 
-    x_test,_ = load_images_from_directory(test_path)
+    x_test,_ = load_images_from_directory(validation_path)
 
     x_test = np.concatenate((np.asarray(x_train_2),np.asarray(x_test)),axis=0)
 
     # Remove the folder
     shutil.rmtree("output_tests/")
-    
+
     # Create a folder
     directory = "output_tests"
     if not os.path.exists(directory):
         os.makedirs(directory)
-    
+
 
     results = model.predict(x_test)
 
@@ -319,5 +318,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-

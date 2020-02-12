@@ -1,6 +1,6 @@
 CLASSES       = ["RM50"]
 CLASS = {
-    "RM50" : "0",
+    "RM50" : 0,
 }
 CHANNEL     = 3
 
@@ -11,6 +11,8 @@ HEIGHT      = int(64)
 GRID_X      = WIDTH // GRID_WIDTH # The number of cells.
 GRID_Y      = HEIGHT // GRID_HEIGHT
 
+RWIDTH = int(378)
+RHEIGHT = int(378)
 
 # Training parameters
 SAMPLE = 100
@@ -31,4 +33,3 @@ test_path = "data/test/"
 
 
 # CLASS_INDEX = ["RM50", "RM1", "RM10", "RM20","RM100"]
-

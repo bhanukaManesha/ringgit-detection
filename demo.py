@@ -18,7 +18,7 @@ def main():
     if args.filename == None:
         print("-f path to file missing")
         return
-    
+
     if args.model == None:
         print("-m path to model missing")
         return
@@ -28,7 +28,7 @@ def main():
     try:
         model = load_model(args.model)
         model.summary()
-        
+
     except:
         print("Please check the model.")
         return
@@ -57,6 +57,7 @@ def main():
             small_frame = image_resize(ori_frame, width=64, height=64)
 
             x_frame = np.expand_dims(small_frame, axis=0)
+            x_frame = x_frame / 255
 
             results = model.predict(x_frame)
 
@@ -64,14 +65,14 @@ def main():
                 x_data = ori_x_frame[r]
                 y_data = results[r]
 
-                
+
                 image, labels = convert_data_to_image(x_data, y_data)
                 labels = non_maximum_supression(labels)
-                rendered = render_with_labels(image, labels, display = False)
+                rendered = render_with_labels(ori_frame, labels, display = False)
 
                 # Display the resulting frame
                 cv2.imshow('Frame',rendered)
-                
+
                 # write the output frame to file
                 out.write(rendered)
 

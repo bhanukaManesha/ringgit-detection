@@ -51,11 +51,10 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     return resized
 
 
-
 def convert_data_to_image(x_data, y_data):
     # Input.
     image = np.reshape(x_data, [HEIGHT, WIDTH, CHANNEL])
-
+    image = np.uint8(x_data * 255)
 
     # Labels
     labels = []
@@ -64,7 +63,7 @@ def convert_data_to_image(x_data, y_data):
 
     for row in range(n_row):
         for col in range(n_col):
-            
+
             d = y_data[row, col]
             # If cash note in the grid cell
             if d[0] < DETECTION_PARAMETER:
@@ -75,8 +74,8 @@ def convert_data_to_image(x_data, y_data):
 
             w = bw * WIDTH
             h = bh * HEIGHT
-            x = col * GRID_WIDTH + (bx * GRID_WIDTH - w/2)
-            y = row * GRID_HEIGHT + (by * GRID_HEIGHT - h/2)
+            x = (col * GRID_WIDTH) + (bx * GRID_WIDTH) - w/2
+            y = (row * GRID_HEIGHT) + (by * GRID_HEIGHT) - h/2
 
             s = CLASSES[np.argmax(d[5:])]
 
@@ -86,8 +85,6 @@ def convert_data_to_image(x_data, y_data):
 
     return image, labels
 
-
-
 def render_with_labels(image, labels, display = False):
     colors = {
         "RM50" : (0,255,0),
@@ -96,6 +93,8 @@ def render_with_labels(image, labels, display = False):
         "RM20" : (0,128,255),
         "RM100" : (255,255,255),
     }
+
+    # image = cv2.bitwise_not(image)
 
     for label in labels:
         # cv2.rectangle(image,(0,0),(5,5),(0,255,0),2)
@@ -113,7 +112,7 @@ def render_with_labels(image, labels, display = False):
 def non_maximum_supression(labels):
 
     remove_index = [0] * len(labels)
-    labels = sorted(labels, key=lambda label: label[2]) 
+    labels = sorted(labels, key=lambda label: label[2])
 
     for i in range(0,len(labels) - 1):
 
@@ -123,7 +122,7 @@ def non_maximum_supression(labels):
             box2 = labels[j]
 
             value = nms_iou(box1[1],box1[2],box1[3],box1[4],box2[1],box2[2],box2[3],box2[4])
-            
+
             if value >= NMS and box1[0] > box2[0]:
                 remove_index[j] = 1
             elif value >= NMS and box1[0] <= box2[0]:
@@ -145,5 +144,3 @@ def nms_iou(fx,fy,fw,fh,px,py,pw,ph):
     intersect = (np.minimum(fx+fw, px+pw) - np.maximum(fx, px)) * (np.minimum(fy+fh, py+ph) - np.maximum(fy, py))
     union = (fw * fh) + (pw * ph) - intersect
     return intersect/union
-
-

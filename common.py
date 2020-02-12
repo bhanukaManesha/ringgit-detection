@@ -13,4 +13,4 @@ GRID_Y      = HEIGHT // GRID_HEIGHT
 
 # Inference parameters
 DETECTION_PARAMETER = 0.5
-NMS = 0.1
+NMS = 0.3

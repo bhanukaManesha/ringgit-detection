@@ -1,9 +1,9 @@
-h5py
-ipython
-imutils
-numpy
-tensorflow==2.0.0
-opencv-python==4.1.2.30
-
 fabric
 imgaug
+h5py
+ipython
+numpy
+tensorflow-gpu==2.0.0
+opencv-python==4.1.2.30
+
+imutils

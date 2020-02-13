@@ -418,14 +418,12 @@ def convert_data_to_yolo(image, polygons):
 def augmentation(aimage, apolygons):
     # Augmentation.
     seq = iaa.Sequential([
-        iaa.PerspectiveTransform(scale=(0.01, 0.05), keep_size=True),
         iaa.Rotate(rotate=(0, 360)),
-        # iaa.Affine(scale=(0.9, 1.1), translate_percent=(-0.1, 0.1)),
-        # iaa.GammaContrast((0.8, 1.2)),
-        iaa.Resize({'width': WIDTH, 'height': HEIGHT}, interpolation=cv2.INTER_AREA),
+        iaa.ElasticTransformation(alpha=(0, 5.0), sigma=0.5),
+        iaa.PerspectiveTransform(scale=(0.01, 0.09), keep_size=True),
+        iaa.Resize({'width': WIDTH, 'height': HEIGHT}, interpolation=cv2.INTER_AREA)
     ])
 
-    # images_polygons = itertools.cycle(zip(image,polygons))
     count = len(apolygons)
 
     polygons = []
@@ -439,12 +437,54 @@ def augmentation(aimage, apolygons):
         # Augment.
         aimage, pps = seq(image=aimage, polygons=pps)
 
+        # print(pps)
+        # print(aimage.shape)
+
     for i,polygon in enumerate(apolygons):
         (x1, y1), (x2, y2), (x3, y3), (x4, y4) = pps[i]
+
+        if (x1 < 0) :
+            x1 = 0
+        if (x2 < 0) :
+            x2 = 0
+        if (x3 < 0) :
+            x3 = 0
+        if (x4 < 0) :
+            x4 = 0
+
+        if (x1 >= WIDTH):
+            x1 = WIDTH
+        if (x2 >= WIDTH):
+            x2 = WIDTH
+        if (x3 >= WIDTH):
+            x3 = WIDTH
+        if (x4 >= WIDTH):
+            x4 = WIDTH
+
+        if (y1 < 0) :
+            y1 = 0
+        if (y2 < 0) :
+            y2 = 0
+        if (y3 < 0) :
+            y3 = 0
+        if (y4 < 0) :
+            y4 = 0
+
+        if (y1 >= HEIGHT):
+            y1 = HEIGHT
+        if (y2 >= HEIGHT):
+            y2 = HEIGHT
+        if (y3 >= HEIGHT):
+            y3 = HEIGHT
+        if (y4 >= HEIGHT):
+            y4 = HEIGHT
+
 
         polygon['points'] = [
             [x1,y1],[x2,y2],[x3,y3],[x4,y4]
         ]
+
+
 
     return aimage, apolygons
 

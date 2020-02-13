@@ -210,7 +210,7 @@ class HistoryCheckpoint(keras.callbacks.Callback):
         with open('{}/history.txt'.format(self.folder), 'w') as f:
             self.model.summary(print_fn=lambda x: f.write(x + '\n'))
     def on_epoch_end(self, epoch, logs={}):
-        keys = ['loss', 'PR_', 'RC_','XY_']
+        keys = ['loss', 'PR_', 'RC_','XY_','C_']
         h = ' - '. join(['{}: {:.4f}'.format(k, logs[k]) for k in keys])
         h = h + ' // ' + ' - '. join(['val_{}: {:.4f}'.format(k, logs['val_'+k]) for k in keys])
         h = '{:03d} : '.format(epoch) + h
@@ -223,9 +223,9 @@ def get_model():
     input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
     x = input_layer
 
-    SEED = 4
+    SEED = 2
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
-        SEED = SEED * 3
+        SEED = SEED * 4
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
@@ -253,7 +253,7 @@ def get_model():
     x = Activation('sigmoid')(x)
 
     model = Model(input_layer, x)
-    model.compile(optimizer="adam", loss=loss, metrics=[PR_,RC_,XY_])
+    model.compile(optimizer="adam", loss=loss, metrics=[PR_,RC_,XY_,C_])
     return model
 
 def main():
@@ -302,7 +302,6 @@ def main():
     directory = "output_tests"
     if not os.path.exists(directory):
         os.makedirs(directory)
-
 
     results = model.predict(x_test)
 

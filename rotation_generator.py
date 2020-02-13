@@ -1,15 +1,11 @@
 from common import *
 from utils import *
 
-# Read the images
-IMAGES, _ = read_subimages(money_path)
-
 def generate_geometrical_noise(image):
     height, width, depth = image.shape
 
-
     # # Draw line.
-    for _ in range(20):
+    for _ in range(50):
         x1 = random.randint(0, width)
         y1 = random.randint(0, height)
         x2 = random.randint(0, width)
@@ -35,7 +31,7 @@ def generate_geometrical_noise(image):
         image = cv2.rectangle(image, (x1,y1), (x2,y2), (r,g,b), thickness)
 
     # Draw circle.
-    for _ in range(50):
+    for _ in range(200):
         x1 = random.randint(-width//2, width+width//2)
         y1 = random.randint(-height//2, height+height//2)
         radius = random.randint(0, width)
@@ -52,7 +48,7 @@ def change_brightness(image, mode = "uniform"):
 
     if mode == "uniform":
         image = image * random.uniform(0.5, 1.5)
-        return np.clip(final_image,a_min = 0, a_max = 255.0)
+        return np.clip(image,a_min = 0, a_max = 255.0)
 
     if mode == "transparent_triangle":
 
@@ -76,20 +72,20 @@ def generate_background(mode = "geometric"):
         return np.full((RHEIGHT,RWIDTH,CHANNEL), 0.)
 
     elif mode == "noise" :
-        return np.random.randint(256, size=(RHEIGHT, RWIDTH,CHANNEL))
+        return np.random.randint(256.0, size=(RHEIGHT, RWIDTH,CHANNEL))
 
     elif mode == 'geometric':
 
-        return generate_geometrical_noise(np.full((RHEIGHT,RWIDTH,CHANNEL), 0.))
+        return generate_geometrical_noise(np.full((RHEIGHT,RWIDTH,CHANNEL), 1.))
 
-def generate(output_currency = "RM50") :
+def generate(images,output_currency = "RM50") :
     '''
     main function to generete the images
     @rows - number of rows for the image
     @col - number of columns for the image
     '''
 
-    image = random.choice(IMAGES)
+    image = random.choice(images[CLASS[output_currency]])
 
     # Generate the background
     background = generate_background()
@@ -101,7 +97,7 @@ def generate(output_currency = "RM50") :
     # Calculating the height and width
     height, width, channels = background.shape
 
-    random_size = random.uniform(0.7, 0.8)
+    random_size = random.uniform(0.6, 0.85)
     height_of_note = int(math.floor(height * random_size))
     width_of_note = int(math.floor(width * random_size))
 
@@ -124,6 +120,9 @@ def generate(output_currency = "RM50") :
     # Overlay the image to the background image
     final_image = overlay_transparent(background,resize_image,x_top,y_top)
 
+    # Change Brightness
+    # final_image = change_brightness(final_image)
+
     polygon = {
         'confidence' : 1.0,
         'points':[
@@ -139,7 +138,10 @@ def generate(output_currency = "RM50") :
 
 def generator(batch_size):
 
-    # angles = [0,22,45,67,90,112,135,157,180,202,225,247,270,292,315,337]
+    images = []
+    for aclass in CLASSES:
+        x, _ = read_subimages('{}{}/'.format(money_path,aclass))
+        images.append(x)
 
     while True:
         # Empty batch arrays.
@@ -148,7 +150,7 @@ def generator(batch_size):
         # Create batch data.
         for i in range(batch_size):
 
-            image, polygons = generate()
+            image, polygons = generate(images, output_currency=random.choice(CLASSES))
             image , polygons = augmentation(image, polygons)
             image, labels = convert_data_to_yolo(image, polygons)
 

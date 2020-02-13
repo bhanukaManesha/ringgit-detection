@@ -123,9 +123,9 @@ def non_maximum_supression(labels):
 
             value = nms_iou(box1[1],box1[2],box1[3],box1[4],box2[1],box2[2],box2[3],box2[4])
 
-            if value >= NMS and box1[0] > box2[0]:
+            if value >= NMS and box1[0] > box2[0] and box1[-1] == box2[-1]:
                 remove_index[j] = 1
-            elif value >= NMS and box1[0] <= box2[0]:
+            elif value >= NMS and box1[0] <= box2[0] and box1[-1] == box2[-1]:
                 remove_index[i] = 1
             else:
                 pass

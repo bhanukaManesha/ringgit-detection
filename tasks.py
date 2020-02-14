@@ -3,7 +3,7 @@ import glob
 from fabric import Connection
 from invoke import task
 
-HOST        = 'ec2-3-0-92-170.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-52-77-232-64.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
@@ -17,7 +17,7 @@ LOCAL_FILES = [
     'train.py',
     'test.py',
     'utils.py',
-    'rotation_generator.py',
+    'generator.py',
     'models',
     'cash',
     'data'
@@ -28,7 +28,7 @@ PYTHON_SCRIPTS = [
     'train.py',
     'test.py',
     'utils.py',
-    'rotation_generator.py'
+    'generator.py'
 ]
 
 @task
@@ -54,8 +54,9 @@ def setup(ctx):
             ctx.conn.run('pip install -U pip')
             ctx.conn.run('pip install --upgrade pip')
             ctx.conn.run('pip install pip-tools')
-            ctx.conn.run('pip install imutils')
             ctx.conn.run('pip install imgaug')
+            ctx.conn.run('pip install tqdm')
+            ctx.conn.run('pip install imutils')
             ctx.conn.run('pip-compile requirements.in')
             ctx.conn.run('pip install -r requirements.txt')
 
@@ -104,3 +105,11 @@ def test(ctx, model=''):
 def clean(ctx):
     with ctx.conn.cd(ROOT):
         ctx.conn.run('rm -rf {}/*'.format(MODEL), pty=True)
+
+
+@task(pre=[connect], post=[close])
+def generate(ctx, model=''):
+    ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(PYTHON_SCRIPTS), remote=REMOTE))
+    with ctx.conn.cd(ROOT):
+        with ctx.conn.prefix('source activate tensorflow2_p36'):
+            ctx.conn.run('dtach -A /tmp/{} python generator.py -c 3000'.format(ROOT), pty=True)

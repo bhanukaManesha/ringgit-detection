@@ -18,9 +18,8 @@ def main(model_path):
 
     model = load_model(model_path)
 
-    x_train_2,y_train_2 = next(generator(10))
     x_test,_ = load_images_from_directory(validation_path)
-    x_test = np.concatenate((np.asarray(x_train_2),np.asarray(x_test)),axis=0)
+    x_test = np.asarray(x_test)
 
     # Remove the folder
     shutil.rmtree("output_tests/")

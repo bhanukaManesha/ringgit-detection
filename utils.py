@@ -14,12 +14,21 @@ import sys
 import copy
 import glob
 import itertools
+import pickle
 
 import imgaug.augmenters as iaa
 from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
 from imgaug.augmentables.polys import Polygon, PolygonsOnImage
 
 from common import *
+
+def write_pickle_datas(path, datas):
+    with open(path, 'wb') as f:
+        pickle.dump(datas, f)
+
+def read_pickle_datas(path):
+    with open(path, 'rb') as f:
+        return pickle.load(f)
 
 def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     # initialize the dimensions of the image to be resized and
@@ -415,21 +424,21 @@ def convert_data_to_yolo(image, polygons):
 
     return x_data, y_data
 
-def augmentation(aimage, apolygons):
+def augmentation(aimage, apolygon):
     # Augmentation.
     seq = iaa.Sequential([
         iaa.Rotate(rotate=(0, 360)),
-        iaa.ElasticTransformation(alpha=(0, 5.0), sigma=0.5),
-        iaa.PerspectiveTransform(scale=(0.01, 0.09), keep_size=True),
+        # iaa.ElasticTransformation(alpha=(0, 5.0), sigma=0.5),
+        iaa.PerspectiveTransform(scale=(0, 0.2), keep_size=True),
         iaa.Resize({'width': WIDTH, 'height': HEIGHT}, interpolation=cv2.INTER_AREA)
     ])
 
-    count = len(apolygons)
+    count = len(apolygon)
 
     polygons = []
-    for polygon in apolygons:
+    for polygon in apolygon:
         polygons.append(Polygon(polygon['points']))
-
+        polygon['points'] = []
 
     for _ in range(count):
         pps = PolygonsOnImage(polygons, shape=aimage.shape)
@@ -437,56 +446,24 @@ def augmentation(aimage, apolygons):
         # Augment.
         aimage, pps = seq(image=aimage, polygons=pps)
 
-        # print(pps)
-        # print(aimage.shape)
+    for i,polygon in enumerate(apolygon):
 
-    for i,polygon in enumerate(apolygons):
-        (x1, y1), (x2, y2), (x3, y3), (x4, y4) = pps[i]
+        for (x,y) in pps[i]:
 
-        if (x1 < 0) :
-            x1 = 0
-        if (x2 < 0) :
-            x2 = 0
-        if (x3 < 0) :
-            x3 = 0
-        if (x4 < 0) :
-            x4 = 0
+            # print(x,y)
+            if x <= 0:
+                x = 0
+            if y <= 0:
+                y = 0
+            if x >= WIDTH:
+                x = WIDTH - 1
+            if y >= HEIGHT:
+                y = HEIGHT - 1
 
-        if (x1 >= WIDTH):
-            x1 = WIDTH
-        if (x2 >= WIDTH):
-            x2 = WIDTH
-        if (x3 >= WIDTH):
-            x3 = WIDTH
-        if (x4 >= WIDTH):
-            x4 = WIDTH
-
-        if (y1 < 0) :
-            y1 = 0
-        if (y2 < 0) :
-            y2 = 0
-        if (y3 < 0) :
-            y3 = 0
-        if (y4 < 0) :
-            y4 = 0
-
-        if (y1 >= HEIGHT):
-            y1 = HEIGHT
-        if (y2 >= HEIGHT):
-            y2 = HEIGHT
-        if (y3 >= HEIGHT):
-            y3 = HEIGHT
-        if (y4 >= HEIGHT):
-            y4 = HEIGHT
+            polygon['points'].append([x,y])
 
 
-        polygon['points'] = [
-            [x1,y1],[x2,y2],[x3,y3],[x4,y4]
-        ]
-
-
-
-    return aimage, apolygons
+    return aimage, apolygon
 
 
 
@@ -497,8 +474,6 @@ def augmentation(aimage, apolygons):
 
 if __name__ == "__main__":
     x_train, y_train = load_images_from_directory("data/val/")
-    print(x_train.shape)
-    print(y_train.shape)
     for i in range(len(x_train)):
         x_data = x_train[i]
         y_data = y_train[i]

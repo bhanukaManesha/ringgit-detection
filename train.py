@@ -24,7 +24,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout
 from tensorflow.keras.backend import *
 
-from rotation_generator import generator
+from generator import generator
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
@@ -55,12 +55,12 @@ def loss(fact, pred):
     # --- Confident loss
     conf_loss = tf.square(fact_conf - pred_conf)
     # print('conf', conf_loss)
-    conf_loss = (mask_obj * conf_loss) + (mask_noobj * conf_loss)
+    conf_loss = (mask_obj * conf_loss) + (mask_noobj * conf_loss) / 64
 
     # --- Box loss
     xy_loss  = tf.square(fact_x - pred_x) + tf.square(fact_y - pred_y)
     wh_loss  = tf.square(tf.sqrt(fact_w) - tf.sqrt(pred_w)) + tf.square(tf.sqrt(fact_h) - tf.sqrt(pred_h))
-    box_loss = 5 * mask_obj * (xy_loss + wh_loss)
+    box_loss = mask_obj * (xy_loss + wh_loss)
     # print('box_loss.shape: ', box_loss.shape)
 
     # --- Category loss
@@ -68,7 +68,7 @@ def loss(fact, pred):
     # print('cat_loss.shape: ', cat_loss.shape)
 
     # --- Total loss
-    return sum(conf_loss + box_loss + cat_loss, axis=-1)
+    return sum(conf_loss + 10 * box_loss + cat_loss, axis=-1)
 
 def PR_(fact,pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -229,6 +229,7 @@ def get_model():
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
+        x = Dropout(0.2) (x)
         # for _ in range(i):
         #     x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
         #     x = BatchNormalization()(x)
@@ -241,12 +242,15 @@ def get_model():
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
 
+
     SEED = SEED * 4
     for i in range(3):
         SEED = SEED // 2
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
+        x = Dropout(0.2) (x)
+
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
     x = BatchNormalization()(x)
@@ -274,16 +278,17 @@ def main():
     model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
     # ---------- Train
-    x_train_1,y_train_1 = load_images_from_directory(validation_path)
-    x_train_2,y_train_2 = next(generator(10))
+    x_val,y_val = load_images_from_directory(validation_path)
 
-    x_val = np.concatenate((np.asarray(x_train_1),np.asarray(x_train_2)), axis=0)
-    y_val = np.concatenate((np.asarray(y_train_1),np.asarray(y_train_2)), axis=0)
+    x_val = np.asarray(x_val)
+    y_val = np.asarray(y_val)
 
+    x_train, y_train = read_pickle_datas('pickles/trains.pickle')
 
     model.fit(
-        x=generator(BATCH),
-        steps_per_epoch=(SAMPLE // BATCH),
+        x=x_train,
+        y=y_train,
+        batch_size=BATCH,
         epochs=EPOCH,
         validation_data=(x_val, y_val),
         shuffle=True,
@@ -293,7 +298,7 @@ def main():
 
     x_test,_ = load_images_from_directory(validation_path)
 
-    x_test = np.concatenate((np.asarray(x_train_2),np.asarray(x_test)),axis=0)
+    # x_test = np.concatenate((x_train, x_test),axis=0)
 
     # Remove the folder
     shutil.rmtree("output_tests/")

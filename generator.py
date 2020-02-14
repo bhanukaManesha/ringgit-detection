@@ -1,5 +1,8 @@
+#!/usr/bin/env python3
 from common import *
 from utils import *
+from argparse import ArgumentParser
+from tqdm import tqdm
 
 def generate_geometrical_noise(image):
     height, width, depth = image.shape
@@ -148,7 +151,7 @@ def generator(batch_size):
         x_trains = []
         y_trains = []
         # Create batch data.
-        for i in range(batch_size):
+        for i in tqdm(range(batch_size)):
 
             image, polygons = generate(images, output_currency=random.choice(CLASSES))
             image , polygons = augmentation(image, polygons)
@@ -163,10 +166,27 @@ def generator(batch_size):
         yield x_trains, y_trains
 
 if __name__ == "__main__" :
+    # parse arguments
+    parser = ArgumentParser()
+    parser.add_argument("-c", "-count", dest="count",
+                        help="number of training data", metavar="file")
+    args = parser.parse_args()
 
-    x_train,y_train = next(generator(50))
+    if args.count == None and int(args.count) > 50:
+        print("-c enter a number greater than 50")
 
-    for i in range(len(x_train)):
+    COUNT = int(args.count)
+
+    x_train,y_train = next(generator(COUNT))
+
+    # Create a folder
+    directory = "pickles"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    write_pickle_datas('pickles/trains.pickle', datas=(x_train, y_train))
+
+    for i in range(50):
         x_data = x_train[i]
         y_data = y_train[i]
 

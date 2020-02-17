@@ -1,7 +1,8 @@
 
-CLASSES       = ["RM50"]
+CLASSES       = ["RM50","RM100"]
 CLASS = {
     "RM50" : 0,
+    "RM100" : 1
 }
 CHANNEL     = 3
 

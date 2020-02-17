@@ -472,6 +472,35 @@ def augmentation(aimage, apolygon):
     return aimage, apolygon
 
 
+def read_polygons(folder):
+    images = []
+    points = []
+
+    for apath in sorted(glob.glob('{}/images/*.png'.format(folder))):
+
+        aname = pathlib.Path(apath).stem
+        image_path = '{}/images/{}.png'.format(folder, aname)
+        label_path = '{}/labels/{}.json'.format(folder, aname)
+
+        try:
+            # Open image file.
+            aimage = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+
+            # Open label file.
+            with open(label_path, 'r') as f:
+                alabel = json.load(f)
+
+            # Append to data.
+            images.append(aimage)
+            points.append(alabel['points'])
+
+            # print(apath)
+        except IOError as e:
+            pass
+
+    return images, points
+
+
 
 if __name__ == "__main__":
     x_train, y_train = load_images_from_directory("data/val/")

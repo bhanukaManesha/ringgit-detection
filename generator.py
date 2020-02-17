@@ -82,70 +82,82 @@ def generate_background(mode = "geometric"):
 
         return generate_geometrical_noise(np.full((RHEIGHT,RWIDTH,CHANNEL), 1.))
 
-def generate_polygon(x,y,output_currency = "RM50"):
+def generate_polygon(x_images,y_polygons,no_images = 1):
     '''
     main function to generete the images
     @rows - number of rows for the image
     @col - number of columns for the image
     '''
 
-    # Get random image and respective set of points
-    rand_int = random.randint(0,len(x[CLASS[output_currency]]) - 1)
-    image = x[CLASS[output_currency]][rand_int]
-    points = y[CLASS[output_currency]][rand_int]
+    allpolygons = []
 
     # Generate the background
     background = generate_background()
 
-    rotate_height, rotate_width, _ = image.shape
+    for _ in range(no_images):
 
-    # Calculating the height and width
-    height, width, channels = background.shape
+        output_currency = random.choice(CLASSES)
+        output_currency_index = CLASS[output_currency]
 
-    random_size = random.uniform(0.6, 0.75)
-    height_of_note = int(math.floor(height * random_size))
-    width_of_note = int(math.floor(width * random_size))
+        # Get random image and respective set of points
+        rand_int = random.randint(0,len(x_images[output_currency_index]) - 1)
 
-    # Calculate the x and y
-    x_center = width * random.uniform(0.3, 0.7)
-    y_center = height * random.uniform(0.3, 0.7)
+        image = x_images[CLASS[output_currency]][rand_int]
+        points = y_polygons[CLASS[output_currency]][rand_int]
 
-    # Resize the image
-    if rotate_height > rotate_width:
-        resize_image = image_resize(image, height=height_of_note)
-    else:
-        resize_image = image_resize(image, width=width_of_note)
+        rotate_height, rotate_width, _ = image.shape
 
-    rheight, rwidth, rchannel = resize_image.shape
-    oheight, owidth, _ = image.shape
+        # Calculating the height and width
+        height, width, channels = background.shape
 
-    # Calculate the top left x and y
-    x_top = abs(int(x_center - (rwidth // 2)))
-    y_top = abs(int(y_center - (rheight // 2)))
+        random_size = random.uniform(0.6, 0.75)
+        height_of_note = int(math.floor(height * random_size))
+        width_of_note = int(math.floor(width * random_size))
 
-    for i, [x,y] in enumerate(points):
-        nx = (x / owidth) * rwidth
-        ny = (y / oheight) * rheight
+        # Calculate the x and y
+        x_center = width * random.uniform(0.3, 0.7)
+        y_center = height * random.uniform(0.3, 0.7)
 
-        points[i] = [nx + x_top,ny + y_top]
+        # Resize the image
+        if rotate_height > rotate_width:
+            resize_image = image_resize(image, height=height_of_note)
+        else:
+            resize_image = image_resize(image, width=width_of_note)
 
-    # Overlay the image to the background image
-    final_image = overlay_transparent(background,resize_image,x_top,y_top)
+        rheight, rwidth, rchannel = resize_image.shape
+        oheight, owidth, _ = image.shape
 
-    polygon = {
-        'confidence' : 1.0,
-        'points':points,
-        'class' : CLASS[output_currency]
-        }
+        # Calculate the top left x and y
+        x_top = abs(int(x_center - (rwidth // 2)))
+        y_top = abs(int(y_center - (rheight // 2)))
 
-    return final_image, [polygon]
+        for i, [x,y] in enumerate(points):
+            nx = (x / owidth) * rwidth
+            ny = (y / oheight) * rheight
 
-def generate(images,output_currency = "RM50") :
+            points[i] = [nx + x_top,ny + y_top]
+
+        # Overlay the image to the background image
+        final_image = overlay_transparent(background,resize_image,x_top,y_top)
+
+        polygon = {
+            'confidence' : 1.0,
+            'points':points,
+            'class' : CLASS[output_currency]
+            }
+
+        allpolygons.append(polygon)
+
+    return final_image, allpolygons
+
+def generate(images) :
     '''
     main function to generete the images
     @rows - number of rows for the image
     @col - number of columns for the image
     '''
+
+    output_currency=random.choice(CLASSES)
 
     image = random.choice(images[CLASS[output_currency]])
 
@@ -198,34 +210,6 @@ def generate(images,output_currency = "RM50") :
 
     return final_image, [polygon]
 
-def read_polygons(folder):
-    images = []
-    points = []
-
-    for apath in sorted(glob.glob('{}/images/*.png'.format(folder))):
-
-        aname = pathlib.Path(apath).stem
-        image_path = '{}/images/{}.png'.format(folder, aname)
-        label_path = '{}/labels/{}.json'.format(folder, aname)
-
-        try:
-            # Open image file.
-            aimage = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-
-            # Open label file.
-            with open(label_path, 'r') as f:
-                alabel = json.load(f)
-
-            # Append to data.
-            images.append(aimage)
-            points.append(alabel['points'])
-
-            # print(apath)
-        except IOError as e:
-            pass
-
-    return images, points
-
 def generator(batch_size):
 
     x_images = []
@@ -244,7 +228,7 @@ def generator(batch_size):
         # Create batch data.
         for i in tqdm(range(batch_size)):
 
-            image, polygons = generate_polygon(deepcopy(x_images), deepcopy(y_polygons), output_currency=random.choice(CLASSES))
+            image, polygons = generate_polygon(deepcopy(x_images), deepcopy(y_polygons))
             image , polygons = augmentation(image, polygons)
             image, labels = convert_data_to_yolo(image, polygons)
 

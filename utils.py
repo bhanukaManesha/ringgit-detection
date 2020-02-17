@@ -16,6 +16,7 @@ import glob
 import itertools
 import pickle
 
+import imgaug
 import imgaug.augmenters as iaa
 from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
 from imgaug.augmentables.polys import Polygon, PolygonsOnImage
@@ -425,32 +426,38 @@ def convert_data_to_yolo(image, polygons):
     return x_data, y_data
 
 def augmentation(aimage, apolygon):
+
+
+    # print(apolygon)
     # Augmentation.
     seq = iaa.Sequential([
-        iaa.Rotate(rotate=(0, 360)),
+        iaa.Rotate(rotate=(0, 359)),
+        iaa.Affine(scale=(0.8, 1.2)),
         # iaa.ElasticTransformation(alpha=(0, 5.0), sigma=0.5),
-        iaa.PerspectiveTransform(scale=(0, 0.2), keep_size=True),
-        iaa.Resize({'width': WIDTH, 'height': HEIGHT}, interpolation=cv2.INTER_AREA)
+        # iaa.PerspectiveTransform(scale=(0, 0.2), keep_size=True),
+        iaa.Resize({'width': WIDTH, 'height': HEIGHT}, interpolation=imgaug.ALL)
     ])
 
     count = len(apolygon)
+
+
 
     polygons = []
     for polygon in apolygon:
         polygons.append(Polygon(polygon['points']))
         polygon['points'] = []
 
-    for _ in range(count):
-        pps = PolygonsOnImage(polygons, shape=aimage.shape)
 
-        # Augment.
-        aimage, pps = seq(image=aimage, polygons=pps)
+    pps = PolygonsOnImage(polygons, shape=aimage.shape)
+
+    # Augment.
+    aimage, pps = seq(image=aimage, polygons=pps)
+
 
     for i,polygon in enumerate(apolygon):
 
         for (x,y) in pps[i]:
 
-            # print(x,y)
             if x <= 0:
                 x = 0
             if y <= 0:
@@ -462,13 +469,7 @@ def augmentation(aimage, apolygon):
 
             polygon['points'].append([x,y])
 
-
     return aimage, apolygon
-
-
-
-
-
 
 
 

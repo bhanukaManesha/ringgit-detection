@@ -14,7 +14,7 @@ import json
 import glob
 
 import tensorflow as tf
-tf.executing_eagerly()
+import tensorflow.keras.backend as K
 
 from tensorflow.keras.callbacks import ModelCheckpoint, Callback
 from tensorflow import keras
@@ -26,11 +26,13 @@ from tensorflow.keras.backend import *
 
 from generator import generator
 
+
+
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 def loss(fact, pred):
-    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
-    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    fact = K.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    pred = K.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
 
     # Truth
     fact_conf = fact[:,:,0]
@@ -53,22 +55,22 @@ def loss(fact, pred):
     mask_noobj = 1 - mask_obj
 
     # --- Confident loss
-    conf_loss = tf.square(fact_conf - pred_conf)
-    # print('conf', conf_loss)
-    conf_loss = (mask_obj * conf_loss) + (mask_noobj * conf_loss) / 64
+    conf_loss = K.binary_crossentropy(fact_conf, pred_conf)
+    conf_loss = (mask_obj * conf_loss) + (0.015 * mask_noobj * conf_loss)
+    # print('conf_loss.shape: ', conf_loss.shape)
 
     # --- Box loss
-    xy_loss  = tf.square(fact_x - pred_x) + tf.square(fact_y - pred_y)
-    wh_loss  = tf.square(tf.sqrt(fact_w) - tf.sqrt(pred_w)) + tf.square(tf.sqrt(fact_h) - tf.sqrt(pred_h))
+    xy_loss  = K.square(fact_x - pred_x) + K.square(fact_y - pred_y)
+    wh_loss  = K.square(K.sqrt(fact_w) - K.sqrt(pred_w)) + K.square(K.sqrt(fact_h) - K.sqrt(pred_h))
     box_loss = mask_obj * (xy_loss + wh_loss)
     # print('box_loss.shape: ', box_loss.shape)
 
     # --- Category loss
-    cat_loss = mask_obj * sum(tf.square(fact_cat - pred_cat), axis=-1)
+    cat_loss = mask_obj * K.sum(K.binary_crossentropy(fact_cat, pred_cat), axis= -1)
     # print('cat_loss.shape: ', cat_loss.shape)
 
     # --- Total loss
-    return sum(conf_loss + 10 * box_loss + cat_loss, axis=-1)
+    return K.sum(conf_loss + 5 * box_loss + cat_loss, axis=-1)
 
 def PR_(fact,pred):
     fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -157,37 +159,31 @@ def RC_(fact,pred):
         )
 
 def XY_(fact, pred):
-
-    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
-    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
-
+    fact = K.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    pred = K.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     # Truth
     fact_conf = fact[:,:,0]
-    fw = fact[:,:,3] * WIDTH
-    fh = fact[:,:,4] * HEIGHT
+    fw = fact[:,:,3] * GRID_WIDTH
+    fh = fact[:,:,4] * GRID_HEIGHT
     fx = fact[:,:,0] * GRID_WIDTH - fw/2
     fy = fact[:,:,1] * GRID_HEIGHT - fh/2
-
     # Prediction
-    pw = pred[:,:,3] * WIDTH
-    ph = pred[:,:,4] * HEIGHT
+    pw = pred[:,:,3] * GRID_WIDTH
+    ph = pred[:,:,4] * GRID_HEIGHT
     px = pred[:,:,0] * GRID_WIDTH - pw/2
     py = pred[:,:,1] * GRID_HEIGHT - ph/2
-
     # IOU
-    intersect = (tf.minimum(fx+fw, px+pw) - tf.maximum(fx, px)) * (tf.minimum(fy+fh, py+ph) - tf.maximum(fy, py))
+    intersect = (K.minimum(fx+fw, px+pw) - K.maximum(fx, px)) * (K.minimum(fy+fh, py+ph) - K.maximum(fy, py))
     union = (fw * fh) + (pw * ph) - intersect
     nonzero_count = tf.math.count_nonzero(fact_conf, dtype=tf.float32, axis=1)
-
-
-    o = sum((intersect / union) * fact_conf , axis = 1) / nonzero_count
-    h = tf.math.reduce_mean(o)
-
-    return switch(tf.equal(h, 0),0.0,h)
+    sum_per_row = K.sum((intersect / union) * fact_conf, axis=1) / nonzero_count
+    mean = tf.math.reduce_mean(sum_per_row)
+    # Mean.
+    return K.switch(tf.equal(mean, 0), 0.0, mean)
 
 def C_(fact, pred):
-    fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
-    pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    fact = K.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+    pred = K.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
     # Truth
     fact_conf = fact[:,:,0]
     fact_cat = fact[:,:,5:]
@@ -195,10 +191,10 @@ def C_(fact, pred):
     pred_cat = pred[:,:,5:]
     # CLASSIFICATION
     nonzero_count = tf.math.count_nonzero(fact_conf, dtype=tf.float32)
-    return switch(
+    return K.switch(
         tf.equal(nonzero_count, 0),
         1.0,
-        sum(categorical_accuracy(fact_cat, pred_cat) * fact_conf) / nonzero_count
+        K.sum(categorical_accuracy(fact_cat, pred_cat) * fact_conf) / nonzero_count
     )
 
 class HistoryCheckpoint(keras.callbacks.Callback):
@@ -210,14 +206,12 @@ class HistoryCheckpoint(keras.callbacks.Callback):
         with open('{}/history.txt'.format(self.folder), 'w') as f:
             self.model.summary(print_fn=lambda x: f.write(x + '\n'))
     def on_epoch_end(self, epoch, logs={}):
-        keys = ['loss', 'PR_', 'RC_','XY_','C_']
+        keys = ['loss', 'XY_','C_']
         h = ' - '. join(['{}: {:.4f}'.format(k, logs[k]) for k in keys])
         h = h + ' // ' + ' - '. join(['val_{}: {:.4f}'.format(k, logs['val_'+k]) for k in keys])
         h = '{:03d} : '.format(epoch) + h
         with open('{}/history.txt'.format(self.folder), 'a') as f:
             f.write(h + '\n')
-
-
 
 def get_model():
     input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
@@ -225,11 +219,11 @@ def get_model():
 
     SEED = 2
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
-        SEED = SEED * 4
+        SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        x = Dropout(0.2) (x)
+        # x = Dropout(0.2) (x)
         # for _ in range(i):
         #     x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
         #     x = BatchNormalization()(x)
@@ -249,7 +243,7 @@ def get_model():
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        x = Dropout(0.2) (x)
+        # x = Dropout(0.2) (x)
 
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
@@ -257,7 +251,7 @@ def get_model():
     x = Activation('sigmoid')(x)
 
     model = Model(input_layer, x)
-    model.compile(optimizer="adam", loss=loss, metrics=[PR_,RC_,XY_,C_])
+    model.compile(optimizer="adam", loss=loss, metrics=[XY_,C_])
     return model
 
 def main():

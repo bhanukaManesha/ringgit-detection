@@ -3,14 +3,17 @@ import glob
 from fabric import Connection
 from invoke import task
 
-HOST        = 'ec2-52-77-232-64.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-3-0-102-143.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
-VENV        = 'virtualenv'
+VENV        = 'tensorflow2_p36'
 MODEL       = 'models'
 OUTPUT      = 'output_tests'
 TESTS       = 'test_results'
+TRAIN = 'train'
+GENERATE = 'generate'
+
 
 LOCAL_FILES = [
     'common.py',
@@ -50,15 +53,9 @@ def setup(ctx):
     # PIP
     ctx.conn.put('requirements.in', remote='{}/requirements.in'.format(ROOT))
     with ctx.conn.cd(ROOT):
-        with ctx.conn.prefix('source activate tensorflow2_p36'):
+        with ctx.conn.prefix('source activate {}'.format(VENV)):
             ctx.conn.run('pip install -U pip')
-            ctx.conn.run('pip install --upgrade pip')
-            ctx.conn.run('pip install pip-tools')
-            ctx.conn.run('pip install imgaug')
-            ctx.conn.run('pip install tqdm')
-            ctx.conn.run('pip install imutils')
-            ctx.conn.run('pip-compile requirements.in')
-            ctx.conn.run('pip install -r requirements.txt')
+            ctx.conn.run('pip install -U -r requirements.in')
 
 @task
 def push(ctx, model=''):
@@ -73,6 +70,14 @@ def pull(ctx):
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
 
 @task(pre=[connect], post=[close])
+def generate(ctx, model=''):
+    ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(PYTHON_SCRIPTS), remote=REMOTE))
+    with ctx.conn.cd(ROOT):
+        with ctx.conn.prefix('source activate tensorflow2_p36'):
+            ctx.conn.run('dtach -A /tmp/{} python generator.py -c 3000'.format(GENERATE), pty=True)
+
+
+@task(pre=[connect], post=[close])
 def train(ctx, model=''):
     ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(PYTHON_SCRIPTS), remote=REMOTE))
     model = sorted([fp for fp in glob.glob('models/*') if model and model in fp], reverse=True)
@@ -81,11 +86,11 @@ def train(ctx, model=''):
 
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate tensorflow2_p36'):
-            ctx.conn.run('dtach -A /tmp/{} python train.py'.format(ROOT), pty=True)
+            ctx.conn.run('python train.py'.format(TRAIN), pty=True)
 
 @task(pre=[connect], post=[close])
 def resume(ctx):
-    ctx.conn.run('dtach -a /tmp/{}'.format(ROOT), pty=True)
+    ctx.conn.run('dtach -a /tmp/{}'.format(TRAIN), pty=True)
 
 @task(pre=[connect], post=[close])
 def test(ctx, model=''):
@@ -104,12 +109,4 @@ def test(ctx, model=''):
 @task(pre=[connect], post=[close])
 def clean(ctx):
     with ctx.conn.cd(ROOT):
-        ctx.conn.run('rm -rf {}/*'.format(MODEL), pty=True)
-
-
-@task(pre=[connect], post=[close])
-def generate(ctx, model=''):
-    ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(PYTHON_SCRIPTS), remote=REMOTE))
-    with ctx.conn.cd(ROOT):
-        with ctx.conn.prefix('source activate tensorflow2_p36'):
-            ctx.conn.run('dtach -A /tmp/{} python generator.py -c 3000'.format(ROOT), pty=True)
+        ctx.conn.run('rm -rf *'.format(MODEL), pty=True)

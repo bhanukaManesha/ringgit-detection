@@ -3,7 +3,7 @@ imgaug
 h5py
 ipython
 numpy
-tensorflow==2.1.0
+tensorflow==2.0.1
 opencv-python==4.1.2.30
 imutils
 tqdm

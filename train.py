@@ -217,7 +217,7 @@ def get_model():
     input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
     x = input_layer
 
-    SEED = 2
+    SEED = 8
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
         SEED = SEED * 2
         x = Conv2D(SEED, 3, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x)
@@ -235,15 +235,13 @@ def get_model():
 
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
-
-
-    SEED = SEED * 4
+    SEED = SEED * 2
     for i in range(3):
         SEED = SEED // 2
         x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        # x = Dropout(0.2) (x)
+        # x = Dropout(0.5) (x)
 
 
     x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
@@ -255,7 +253,6 @@ def get_model():
     return model
 
 def main():
-
     model = get_model()
 
     print(model.summary())

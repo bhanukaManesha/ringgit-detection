@@ -80,7 +80,7 @@ def generate_background(mode = "geometric"):
 
     elif mode == 'geometric':
 
-        return generate_geometrical_noise(np.full((RHEIGHT,RWIDTH,CHANNEL), 1.))
+        return generate_geometrical_noise(np.full((RHEIGHT,RWIDTH,CHANNEL), 1., dtype = np.uint8))
 
 def generate_polygon(x_images,y_polygons,no_images = 1):
     '''
@@ -245,10 +245,17 @@ if __name__ == "__main__" :
     parser = ArgumentParser()
     parser.add_argument("-c", "-count", dest="count",
                         help="number of training data", metavar="file")
+    parser.add_argument("-r", "-render", dest="render",
+                        help="render each image")
     args = parser.parse_args()
 
     if args.count == None and int(args.count) > 50:
         print("-c enter a number greater than 50")
+
+    if args.render == None:
+        render = False
+    else:
+        render = True
 
     COUNT = int(args.count)
 
@@ -261,10 +268,11 @@ if __name__ == "__main__" :
 
     write_pickle_datas('pickles/trains.pickle', datas=(x_train, y_train))
 
-    for i in range(50):
-        x_data = x_train[i]
-        y_data = y_train[i]
+    if render :
+        for i in range(50):
+            x_data = x_train[i]
+            y_data = y_train[i]
 
-        image, label = convert_data_to_image(x_data, y_data)
-        rendered = render_with_labels(image, label, display = False)
-        cv2.imwrite('output_render/test_render_{:02d}.png'.format(i),rendered)
+            image, label = convert_data_to_image(x_data, y_data)
+            rendered = render_with_labels(image, label, display = False)
+            cv2.imwrite('output_render/test_render_{:02d}.png'.format(i),rendered)

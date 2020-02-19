@@ -3,6 +3,7 @@ from common import *
 import tensorflow as tf
 import cv2
 import os
+import pathlib
 import numpy as np
 import random
 import math
@@ -12,9 +13,23 @@ import json
 import sys
 import copy
 import glob
-from itertools import combinations
+import itertools
+import pickle
+
+import imgaug
+import imgaug.augmenters as iaa
+from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
+from imgaug.augmentables.polys import Polygon, PolygonsOnImage
 
 from common import *
+
+def write_pickle_datas(path, datas):
+    with open(path, 'wb') as f:
+        pickle.dump(datas, f)
+
+def read_pickle_datas(path):
+    with open(path, 'rb') as f:
+        return pickle.load(f)
 
 def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     # initialize the dimensions of the image to be resized and
@@ -60,7 +75,6 @@ def progress(count, total, suffix=''):
     sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', suffix))
     sys.stdout.flush()
 
-
 def read_subimages(path_to_folder):
     images = []
     files = glob.glob(path_to_folder + "*.png")
@@ -72,7 +86,6 @@ def read_subimages(path_to_folder):
 
     return images, files
 
-
 def overlay_image(layer0_img, layer1_img, x, y):
 
     height, width, channel = layer1_img.shape
@@ -81,16 +94,16 @@ def overlay_image(layer0_img, layer1_img, x, y):
 
     return layer0_img
 
-def doOverlap(first, second): 
+def doOverlap(first, second):
     x_axis_not_overlap = False
     y_axis_not_overlap = False
 
     if(int(first["x1"]) > int(second["x2"]) or int(first["x2"]) < int(second["x1"])):
         x_axis_not_overlap = True
-  
+
     if(int(first["y1"]) > int(second["y2"]) or int(first["y2"]) < int(second["y1"])):
         y_axis_not_overlap = True
-  
+
     if x_axis_not_overlap and y_axis_not_overlap:
         return False
     else:
@@ -141,7 +154,7 @@ def rotate_image(mat, angle):
     rotation_mat = cv2.getRotationMatrix2D(image_center, angle, 1.)
 
     # rotation calculates the cos and sin, taking absolutes of those.
-    abs_cos = abs(rotation_mat[0,0]) 
+    abs_cos = abs(rotation_mat[0,0])
     abs_sin = abs(rotation_mat[0,1])
 
     # find the new width and height bounds
@@ -159,7 +172,7 @@ def rotate_image(mat, angle):
 def non_maximum_supression(labels):
 
     remove_index = [0] * len(labels)
-    labels = sorted(labels, key=lambda label: label[2]) 
+    labels = sorted(labels, key=lambda label: label[2])
 
     for i in range(0,len(labels) - 1):
 
@@ -169,7 +182,7 @@ def non_maximum_supression(labels):
             box2 = labels[j]
 
             value = nms_iou(box1[1],box1[2],box1[3],box1[4],box2[1],box2[2],box2[3],box2[4])
-            
+
             if value >= NMS and box1[0] > box2[0]:
                 remove_index[j] = 1
             elif value >= NMS and box1[0] <= box2[0]:
@@ -187,6 +200,7 @@ def non_maximum_supression(labels):
 def convert_data_to_image(x_data, y_data):
     # Input.
     image = np.reshape(x_data, [HEIGHT, WIDTH, CHANNEL])
+    image = np.uint8(x_data * 255)
 
     # Labels
     labels = []
@@ -195,7 +209,7 @@ def convert_data_to_image(x_data, y_data):
 
     for row in range(n_row):
         for col in range(n_col):
-            
+
             d = y_data[row, col]
             # If cash note in the grid cell
             if d[0] < DETECTION_PARAMETER:
@@ -265,7 +279,7 @@ def read_data(mode):
         image = cv2.imread(image_path + image_name + image_type).astype(np.float32)/255.0
 
         image_data.append(image)
-        
+
         if mode == "train":
             label_path = "data/train/labels/"
         elif mode == "test":
@@ -332,12 +346,10 @@ def nms_iou(fx,fy,fw,fh,px,py,pw,ph):
     union = (fw * fh) + (pw * ph) - intersect
     return intersect/union
 
-
-
 def load_images_from_directory(path):
 
-    image_paths = glob.glob(path + "images/*.jpg")
-    label_paths = glob.glob(path + "labels/*.txt")
+    image_paths = glob.glob(path + "images/*.png")
+    label_paths = glob.glob(path + "labels/*.json")
 
     image_paths.sort()
     label_paths.sort()
@@ -345,32 +357,158 @@ def load_images_from_directory(path):
     x_train = []
     y_train = []
 
-    for path in image_paths:
-        image = cv2.imread(path).astype(np.float32)
-        x_train.append(image)
+    for apath in glob.glob(path + '/images/*.png', recursive=True):
+        aname = pathlib.Path(apath).stem
+        image_path = '{}/images/{}.png'.format(path,aname)
+        label_path = '{}/labels/{}.json'.format(path,aname)
 
-    if len(label_paths) > 0:
-        for path in label_paths:
-            with open(path) as f:
-                annotations = f.readlines()
+        try:
+            # Open label file.
+            with open(label_path, 'r') as f:
+                alabel = json.load(f)
+            # Open image file.
+            aimage = cv2.imread(image_path)
+            assert(aimage.shape[0] == aimage.shape[1])
 
-            annotations = [x.strip() for x in annotations]
-            annotations = [x.split() for x in annotations]
-            annotations = np.asarray(annotations)
+            aimage, alabel = augmentation(aimage, alabel)
+            images, labels = convert_data_to_yolo(aimage, alabel)
 
-            y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
+            # Append to data.
+            x_train.append(images)
+            y_train.append(labels)
+        except IOError as e:
+            pass
 
-            for row in range(GRID_X):
-                for col in range(GRID_Y):
-                    y_data[row, col, 0] = float(annotations[row * GRID_X + col][0])
-                    y_data[row, col, 1:5] = [
-                        float(annotations[row * GRID_X + col][2]),
-                        float(annotations[row * GRID_X + col][3]),
-                        float(annotations[row * GRID_X + col][4]),
-                        float(annotations[row * GRID_X + col][5])
-                    ]
-                    y_data[row, col, int(5+float(annotations[row * GRID_X + col][1]))] = float(1)
-
-            y_train.append(y_data)
+    x_train = np.asarray(x_train)
+    y_train = np.asarray(y_train)
 
     return x_train,y_train
+
+def convert_data_to_yolo(image, polygons):
+
+    # Input.
+    x_data = image / 255
+    x_data = np.reshape(x_data, [HEIGHT, WIDTH, CHANNEL])
+
+    # Truth.
+    y_data = np.zeros((GRID_Y, GRID_X, 5+len(CLASSES)))
+
+    for polygon in polygons:
+        confidence = polygon['confidence']
+        box_class = polygon['class']
+        points = polygon['points']
+
+        x_ = []
+        y_ = []
+
+        for point in points:
+            x_.append(point[0])
+            y_.append(point[1])
+
+        x = min(x_)
+        y = min(y_)
+        w = max(x_) - x
+        h = max(y_) - y
+
+        cx = (x + w/2) // GRID_WIDTH # CELL x
+        cy = (y + h/2) // GRID_HEIGHT # CELL y
+        bx = (x + w/2) % GRID_WIDTH / GRID_WIDTH # CENTER of box relative to box
+        by = (y + h/2) % GRID_HEIGHT / GRID_HEIGHT # CENTER of box relative to box
+        bw = w / WIDTH # WIDTH of box relative to image
+        bh = h / HEIGHT # HEIGHT of box relative to image
+
+        row, col = int(cy), int(cx) # Swap to row and col.
+        y_data[row, col, 0] = 1
+        y_data[row, col, 1:5] = [bx, by, bw, bh]
+        y_data[row, col, 5+box_class] = 1.0
+
+
+    return x_data, y_data
+
+def augmentation(aimage, apolygon):
+
+
+    # print(apolygon)
+    # Augmentation.
+    seq = iaa.Sequential([
+        iaa.ChangeColorTemperature((4000, 9000)),
+        iaa.Rotate(rotate=(0, 359)),
+        iaa.Affine(scale=(0.8, 1.2)),
+        # iaa.ElasticTransformation(alpha=(0, 5.0), sigma=0.5),
+        iaa.PerspectiveTransform(scale=(0.02, 0.08), keep_size=True),
+        iaa.Resize({'width': WIDTH, 'height': HEIGHT}, interpolation=imgaug.ALL)
+    ])
+
+    count = len(apolygon)
+
+
+
+    polygons = []
+    for polygon in apolygon:
+        polygons.append(Polygon(polygon['points']))
+        polygon['points'] = []
+
+
+    pps = PolygonsOnImage(polygons, shape=aimage.shape)
+
+    # Augment.
+    aimage, pps = seq(image=aimage, polygons=pps)
+
+
+    for i,polygon in enumerate(apolygon):
+
+        for (x,y) in pps[i]:
+
+            if x <= 0:
+                x = 0
+            if y <= 0:
+                y = 0
+            if x >= WIDTH:
+                x = WIDTH - 1
+            if y >= HEIGHT:
+                y = HEIGHT - 1
+
+            polygon['points'].append([x,y])
+
+    return aimage, apolygon
+
+
+def read_polygons(folder):
+    images = []
+    points = []
+
+    for apath in sorted(glob.glob('{}/images/*.png'.format(folder))):
+
+        aname = pathlib.Path(apath).stem
+        image_path = '{}/images/{}.png'.format(folder, aname)
+        label_path = '{}/labels/{}.json'.format(folder, aname)
+
+        try:
+            # Open image file.
+            aimage = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+
+            # Open label file.
+            with open(label_path, 'r') as f:
+                alabel = json.load(f)
+
+            # Append to data.
+            images.append(aimage)
+            points.append(alabel['points'])
+
+            # print(apath)
+        except IOError as e:
+            pass
+
+    return images, points
+
+
+
+if __name__ == "__main__":
+    x_train, y_train = load_images_from_directory("data/val/")
+    for i in range(len(x_train)):
+        x_data = x_train[i]
+        y_data = y_train[i]
+
+        image, label = convert_data_to_image(x_data, y_data)
+        rendered = render_with_labels(image, label, display = False)
+        cv2.imwrite('output_render/test_render_{:02d}.png'.format(i),rendered)

@@ -7,7 +7,9 @@ p2_sg.pem
 
 backup/
 
+cash/*
 data/
 models/
 output_tests/
 output_render/
+pickles/

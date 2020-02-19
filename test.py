@@ -17,19 +17,19 @@ def load_model(model_path):
 def main(model_path):
 
     model = load_model(model_path)
-    
-    x_train_2,y_train_2 = next(generator(10))
-    x_test,_ = load_images_from_directory(test_path)
-    x_test = np.concatenate((np.asarray(x_train_2),np.asarray(x_test)),axis=0)
+
+    x_test,y_test = load_images_from_directory(validation_path)
+    x_test, y_test = np.asarray(x_test), np.asarray(y_test)
+
 
     # Remove the folder
     shutil.rmtree("output_tests/")
-    
+
     # Create a folder
     directory = "output_tests"
     if not os.path.exists(directory):
         os.makedirs(directory)
-    
+
 
     results = model.predict(x_test)
 
@@ -39,7 +39,7 @@ def main(model_path):
         y_data = results[r]
 
         image, labels = convert_data_to_image(x_data, y_data)
-        labels = non_maximum_supression(labels)
+        # labels = non_maximum_supression(labels)
         rendered = render_with_labels(image, labels, display = False)
         cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
 

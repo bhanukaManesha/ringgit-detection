@@ -65,7 +65,7 @@ def change_brightness(image, mode = "uniform"):
 
         return cv2.addWeighted(shape,0.3,image,0.7,0)
 
-def generate_background(mode = "geometric"):
+def generate_background(mode = "noise"):
 
     if mode == "white" :
 
@@ -76,7 +76,7 @@ def generate_background(mode = "geometric"):
         return np.full((RHEIGHT,RWIDTH,CHANNEL), 0.)
 
     elif mode == "noise" :
-        return np.random.randint(256.0, size=(RHEIGHT, RWIDTH,CHANNEL))
+        return np.random.randint(256.0, size=(RHEIGHT, RWIDTH,CHANNEL), dtype = np.uint8)
 
     elif mode == 'geometric':
 

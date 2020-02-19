@@ -217,34 +217,34 @@ def get_model():
     input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
     x = input_layer
 
-    SEED = 8
+    SEED = 2
     for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
         SEED = SEED * 2
-        x = Conv2D(SEED, 3, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x)
+        x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         # x = Dropout(0.2) (x)
-        # for _ in range(i):
-        #     x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-        #     x = BatchNormalization()(x)
-        #     x = Activation('relu')(x)
+        for _ in range(i):
+            x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
+            x = BatchNormalization()(x)
+            x = Activation('relu')(x)
 
-        #     x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-        #     x = BatchNormalization()(x)
-        #     x = Activation('relu')(x)
+            x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
+            x = BatchNormalization()(x)
+            x = Activation('relu')(x)
 
         x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
-    SEED = SEED * 2
-    for i in range(3):
+    # SEED = SEED * 2
+    for i in range(4):
         SEED = SEED // 2
-        x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
+        x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         # x = Dropout(0.5) (x)
 
 
-    x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last", kernel_initializer='he_uniform', bias_initializer='he_uniform')(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
+    x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
     x = BatchNormalization()(x)
     x = Activation('sigmoid')(x)
 
@@ -307,7 +307,7 @@ def main():
         y_data = results[r]
 
         image, labels = convert_data_to_image(x_data, y_data)
-        labels = non_maximum_supression(labels)
+        # labels = non_maximum_supression(labels)
         rendered = render_with_labels(image, labels, display = False)
         cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
 

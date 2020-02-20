@@ -5,54 +5,43 @@ import os, shutil, math
 from argparse import ArgumentParser
 import numpy as np
 
-from data import Data
+
 from common import *
-from model import YOLOModel
-from render import Render
 
-
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+from lib.yolo.YOLOModel import YOLOModel
+from lib.data.DataCollection import DataCollection
+from lib.data.Render import Render
 
 def main():
 
     yolomodel = YOLOModel()
-    print(yolomodel.model.summary())
 
-    data = Data()
+    # Get the data
+    datacollection = DataCollection.frompickle('data/pickles', 'collection.pickle')
+    yolomodel.datasource = datacollection
 
-    # ---------- Train
-    x_train, y_train = data.read_pickle_datas()
-
-    x_val,y_val = data.load_images_from_directory()
-    x_val,y_val = np.asarray(x_val) , np.asarray(y_val)
-
-
-    yolomodel.model.fit(
-        x=x_train,
-        y=y_train,
-        batch_size=BATCH,
-        epochs=EPOCH,
-        validation_data=(x_val, y_val),
-        shuffle=True,
-        callbacks=[yolomodel.model_checkpoint, yolomodel.history_checkpoint])
+    yolomodel.train()
 
     # ---------- Test
-    x_test,_ = data.load_images_from_directory()
 
-    # Remove the folder
-    shutil.rmtree("output_tests/")
-
-    # Create a folder
-    directory = "output_tests"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    output_types = ['train','test']
 
     # Get model prediction
-    results = yolomodel.model.predict(x_test)
+    resultcollection = yolomodel.predict(output_types)
 
     # Render and write the output
-    r = Render()
-    r.output_result(x_test,results)
+
+    for otype in output_types:
+
+        trainrender = Render(resultcollection.train, 'output_tests')
+        trainrender.makedir()
+        trainrender.output_result()
+
+        testrender = Render(resultcollection.test, 'output_tests')
+        testrender.output_result()
+
+
+
 
 if __name__ == '__main__':
 

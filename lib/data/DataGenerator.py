@@ -32,7 +32,7 @@ class DataGenerator:
         allpolygons = []
 
         # Generate the background
-        background = self.generate_background()
+        background = next(self._get_real_background())
 
         for _ in range(no_images):
 
@@ -60,9 +60,9 @@ class DataGenerator:
 
             # Resize the image
             if rotate_height > rotate_width:
-                resize_image = self.image_resize(image, height=height_of_note)
+                resize_image = self._image_resize(image, height=height_of_note)
             else:
-                resize_image = self.image_resize(image, width=width_of_note)
+                resize_image = self._image_resize(image, width=width_of_note)
 
             rheight, rwidth, rchannel = resize_image.shape
             oheight, owidth, _ = image.shape
@@ -75,7 +75,7 @@ class DataGenerator:
             points = np.apply_along_axis(resizer, 1, points)
 
             # Overlay the image to the background image
-            final_image = self.overlay_transparent(background,resize_image,x_top,y_top)
+            final_image = self._overlay_transparent(background,resize_image,x_top,y_top)
 
             polygon = {
                 'confidence' : 1.0,
@@ -134,7 +134,6 @@ class DataGenerator:
 
             yield self.merge_data_objs(datas, batch_size)
 
-
     def merge_data_objs(self,datas, batch_size):
 
         x_ = []
@@ -149,7 +148,28 @@ class DataGenerator:
             dtype = 'batch_data'
         )
 
+    def _get_real_background(self):
 
+        bimages = self._images_from_directory('data/raw_backgrounds')
+
+        while True:
+
+            image = random.choice(bimages)
+
+            image = self._image_resize(image, width = RWIDTH, height=RHEIGHT)
+
+            yield image
+
+    def _images_from_directory(self, folder):
+
+        images = []
+        image_paths = glob.glob("{}/*.jpg".format(folder))
+
+        for path in image_paths:
+
+            images.append(cv2.imread(path))
+
+        return np.asarray(images)
 
     def generate_geometrical_noise(self,image):
         height, width, depth = image.shape
@@ -194,7 +214,7 @@ class DataGenerator:
 
         return image
 
-    def adjust_brightness(self, image, mode = "uniform"):
+    def _adjust_brightness(self, image, mode = "uniform"):
 
         if mode == "uniform":
             image = image * random.uniform(0.5, 1.5)
@@ -211,7 +231,7 @@ class DataGenerator:
 
             return cv2.addWeighted(shape,0.3,image,0.7,0)
 
-    def generate_background(self, mode = "noise"):
+    def _generate_background(self, mode = "real"):
 
         if mode == "white" :
 
@@ -228,7 +248,7 @@ class DataGenerator:
 
             return generate_geometrical_noise(np.full((RHEIGHT,RWIDTH,CHANNEL), 1., dtype = np.uint8))
 
-    def image_resize(self, image, width = None, height = None, inter = cv2.INTER_AREA):
+    def _image_resize(self, image, width = None, height = None, inter = cv2.INTER_AREA):
         # initialize the dimensions of the image to be resized and
         # grab the image size
         dim = None
@@ -262,7 +282,7 @@ class DataGenerator:
         # return the resized image
         return resized
 
-    def overlay_transparent(self, background, overlay, x, y):
+    def _overlay_transparent(self, background, overlay, x, y):
 
         background_width = background.shape[1]
         background_height = background.shape[0]
@@ -296,7 +316,7 @@ class DataGenerator:
 
         return background
 
-    def load_images_from_directory(self, folder):
+    def from_directory(self, folder):
 
         image_paths = glob.glob("{}/images/*.png".format(folder))
         label_paths = glob.glob("{}/labels/*.json".format(folder))

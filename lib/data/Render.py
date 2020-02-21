@@ -84,7 +84,7 @@ class Render:
 
     def output_result(self):
 
-        c = len(self.rdata.y) if len(self.rdata.y) <= 50 else 50
+        c = len(self.rdata.y) if len(self.rdata.y) <= 100 else 100
 
         # Plot training
         for r in range(c):

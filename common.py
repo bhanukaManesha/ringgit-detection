@@ -17,18 +17,16 @@ RWIDTH = int(378)
 RHEIGHT = int(378)
 
 # Training parameters
-SAMPLE = 100
-BATCH  = 8
-EPOCH  = 100
+SAMPLE = 500
 
 # Inference parameters
 DETECTION_PARAMETER = 0.8
 NMS = 0.5
 
-
-# Generator parameters
-money_path = "cash"
-validation_path = "data/val/"
-test_path = "data/test/"
-
-# CLASS_INDEX = ["RM50", "RM1", "RM10", "RM20","RM100"]
+colors = {
+        "RM50" : (0,255,0),
+        "RM1" : (255,0,0),
+        "RM10" : (0,0,255),
+        "RM20" : (0,128,255),
+        "RM100" : (255,255,255),
+    }

@@ -17,9 +17,7 @@ RWIDTH = int(378)
 RHEIGHT = int(378)
 
 # Training parameters
-SAMPLE = 5
-BATCH  = 8
-EPOCH  = 100
+SAMPLE = 500
 
 # Inference parameters
 DETECTION_PARAMETER = 0.8

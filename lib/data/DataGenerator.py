@@ -43,7 +43,7 @@ class DataGenerator:
             rand_int = random.randint(0,len(x_images[output_currency_index]) - 1)
 
             image = x_images[CLASS[output_currency]][rand_int]
-            points = y_polygons[CLASS[output_currency]][rand_int]
+            points = np.asarray(y_polygons[CLASS[output_currency]][rand_int])
 
             rotate_height, rotate_width, _ = image.shape
 
@@ -71,11 +71,8 @@ class DataGenerator:
             x_top = abs(int(x_center - (rwidth // 2)))
             y_top = abs(int(y_center - (rheight // 2)))
 
-            for i, [x,y] in enumerate(points):
-                nx = (x / owidth) * rwidth
-                ny = (y / oheight) * rheight
-
-                points[i] = [nx + x_top,ny + y_top]
+            resizer = lambda t: [x_top + ((t[0] / owidth) * rwidth) , y_top + ((t[1] / oheight) * rheight)]
+            points = np.apply_along_axis(resizer, 1, points)
 
             # Overlay the image to the background image
             final_image = self.overlay_transparent(background,resize_image,x_top,y_top)
@@ -116,7 +113,7 @@ class DataGenerator:
             except IOError as e:
                 pass
 
-        return images, points
+        return np.asarray(images), np.asarray(points)
 
     def serve(self,batch_size):
 

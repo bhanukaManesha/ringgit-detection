@@ -93,6 +93,6 @@ class Render:
 
             data.asrender()
 
-            self.apply_nonmaximumsupression(data)
+            # self.apply_nonmaximumsupression(data)
 
             self.render_with_labels(data)

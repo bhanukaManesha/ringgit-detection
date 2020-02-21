@@ -17,5 +17,5 @@ if __name__ == "__main__" :
     collection.write_pickle('data/pickles','collection.pickle')
 
     if render :
-        options = ['train','valid']
+        options = ['train','validation']
         collection.render('output_render', options)

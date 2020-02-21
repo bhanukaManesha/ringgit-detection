@@ -12,10 +12,13 @@ class Render:
 
     def __init__(self, data, folder, display = False, write = True):
         assert data.dtype == 'batch_data'
-        self.rdata = data
         self.folder= folder
         self.display = display
         self.write = write
+
+        self.makedir()
+        self.rdata = data
+
 
     def apply_nonmaximumsupression(self, dataobj):
 
@@ -73,15 +76,18 @@ class Render:
             shutil.rmtree("{}/".format(self.folder))
 
         except FileNotFoundError:
-            pass
+            print("Folder not found. Creating new folder.")
 
         # Create a folder
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
 
     def output_result(self):
+
+        c = len(self.rdata.y) if len(self.rdata.y) <= 50 else 50
+
         # Plot training
-        for r in range(len(self.rdata.y)):
+        for r in range(c):
 
             data = Data((self.rdata.x[r], self.rdata.y[r]), dtype = 'data')
 

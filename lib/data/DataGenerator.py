@@ -163,13 +163,13 @@ class DataGenerator:
     def _images_from_directory(self, folder):
 
         images = []
-        image_paths = glob.glob("{}/*.jpg".format(folder))
+        image_paths = glob.glob("{}/*.jpeg".format(folder))
 
         for path in image_paths:
 
             images.append(cv2.imread(path))
 
-        return np.asarray(images)
+        return images
 
     def generate_geometrical_noise(self,image):
         height, width, depth = image.shape

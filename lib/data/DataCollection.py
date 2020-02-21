@@ -35,10 +35,10 @@ class DataCollection:
         train = next(generator.serve(SAMPLE))
 
         # validatation data
-        validation = generator.load_images_from_directory('data/val')
+        validation = generator.from_directory('data/val')
 
         # testing data
-        test = generator.load_images_from_directory('data/val')
+        test = generator.from_directory('data/val')
 
         return cls(train, validation, test)
 

@@ -10,36 +10,25 @@ from common import *
 
 from lib.yolo.YOLOModel import YOLOModel
 from lib.data.DataCollection import DataCollection
-from lib.data.Render import Render
 
-def main():
-
-    yolomodel = YOLOModel()
+def main(options):
+    yolomodel = YOLOModel(options)
 
     # Get the data
     datacollection = DataCollection.frompickle('data/pickles', 'collection.pickle')
-    yolomodel.datasource = datacollection
+    yolomodel._datasource = datacollection
 
     yolomodel.train()
 
     # ---------- Test
 
-    output_types = ['train','test']
+    options = ['train','test']
 
     # Get model prediction
-    resultcollection = yolomodel.predict(output_types)
+    resultcollection = yolomodel.predict(options)
 
-    # Render and write the output
-
-    for otype in output_types:
-
-        trainrender = Render(resultcollection.train, 'output_tests')
-        trainrender.makedir()
-        trainrender.output_result()
-
-        testrender = Render(resultcollection.test, 'output_tests')
-        testrender.output_result()
-
+    # Render the result
+    resultcollection.render('output_tests', options)
 
 
 
@@ -52,7 +41,9 @@ if __name__ == '__main__':
                         help="render each image")
     args = parser.parse_args()
 
-    EPOCH = int(args.epochs)
-    BATCH = int(args.batch_size)
+    options = {
+        'epoch' : int(args.epochs),
+        'batch' : int(args.batch_size)
+    }
 
-    main()
+    main(options)

@@ -6,6 +6,7 @@ from common import *
 
 from lib.data.Data import Data
 from lib.data.DataGenerator import DataGenerator
+from lib.data.Render import Render
 
 class DataCollection:
 
@@ -50,4 +51,24 @@ class DataCollection:
         with open('{}/{}'.format(folder, picklename), 'wb') as f:
             pickle.dump(self, f)
 
-    def render_collection(self):
+    def render(self, folder, options):
+        # Render and write the output
+        for option in options:
+
+            if option == 'train':
+                assert self.train != None
+                trainrender = Render(self.train, '{}/{}'.format(folder, option))
+                trainrender.output_result()
+
+            elif option == 'validation':
+                assert self.validation != None
+                trainrender = Render(self.validation, '{}/{}'.format(folder, option))
+                trainrender.output_result()
+
+            elif option == 'test':
+                assert self.test != None
+                trainrender = Render(self.test, '{}/{}'.format(folder, option))
+                trainrender.output_result()
+
+            else:
+                print('Invalid option.')

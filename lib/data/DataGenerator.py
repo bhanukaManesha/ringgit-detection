@@ -23,7 +23,7 @@ class DataGenerator:
             self.polygons.append(y_)
 
     # Can Optimize
-    def render_from_raw(self, x_images,y_polygons,no_images = 1):
+    def from_raw(self, x_images,y_polygons,no_images = 1):
         '''
         main function to generete the images
         @rows - number of rows for the image
@@ -123,7 +123,7 @@ class DataGenerator:
             # Create batch data.
             for i in tqdm(range(batch_size)):
 
-                aug = AugmentData.fromdataobj(self.render_from_raw(deepcopy(self.images), deepcopy(self.polygons)))
+                aug = AugmentData.fromdataobj(self.from_raw(deepcopy(self.images), deepcopy(self.polygons)))
 
                 aug.augmentation()
 

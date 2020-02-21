@@ -2,7 +2,6 @@
 from argparse import ArgumentParser
 
 from lib.data.DataCollection import DataCollection
-from lib.data.Render import Render
 
 if __name__ == "__main__" :
     # parse arguments
@@ -18,9 +17,5 @@ if __name__ == "__main__" :
     collection.write_pickle('data/pickles','collection.pickle')
 
     if render :
-        trainrender = Render(collection.train, 'output_render')
-        trainrender.makedir()
-        trainrender.output_result()
-
-        valrender = Render(collection.validation, 'output_render')
-        valrender.output_result()
+        options = ['train','valid']
+        collection.render('output_render', options)

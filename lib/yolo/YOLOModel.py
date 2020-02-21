@@ -15,13 +15,13 @@ from tensorflow.keras.backend import *
 from datetime import datetime
 
 from common import *
-from lib.yolo.YOLOModel import YOLOModel
+from lib.yolo.YOLOMetrics import YOLOMetrics
 
 class YOLOModel :
 
-    def __init__(self):
+    def __init__(self, options):
         self._model = self.get_model()
-        print(self.model.summary())
+        print(self._model.summary())
         self._metrics = YOLOMetrics()
 
         # Setup the checkpoints
@@ -32,8 +32,8 @@ class YOLOModel :
         self._history_checkpoint = YOLOMetrics.HistoryCheckpoint(folder=folder)
         self._model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
-
         self._datasource = None
+        self._options = options
 
     def get_model(self):
         input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
@@ -133,28 +133,32 @@ class YOLOModel :
         # --- Total loss
         return K.sum(conf_loss + 5 * box_loss + cat_loss, axis=-1)
 
-    @datasource.setter
-    def datasource(self, value):
-        assert value.dtype == 'batch_data'
-        self.datasource = value
-
     def train(self):
         self._model.fit(
             x=self._datasource.train.x,
             y=self._datasource.train.y,
-            batch_size=BATCH,
-            epochs=EPOCH,
+            batch_size=self._options['batch'],
+            epochs=self._options['epoch'],
             validation_data=(self._datasource.validation.x, self._datasource.validation.y),
             shuffle=True,
-            callbacks=[yolomodel.model_checkpoint, yolomodel.history_checkpoint])
+            callbacks=[self._model_checkpoint, self._history_checkpoint])
 
-    def predict(self, params):
+    def predict(self, options):
 
-        collection = self._datasource.deepcopy()
+        collection = deepcopy(self._datasource)
 
-        for param in params:
-            collection.train.y = yolomodel.model.predict(collection.train.x) if param == 'train'
-            collection.validation.y = yolomodel.model.predict(collection.validation.x) if param == 'validation'
-            collection.test.y = yolomodel.model.predict(collection.test.x) if param == 'test'
+        for option in options:
+
+            if option == 'train':
+                collection.train.y = self._model.predict(collection.train.x)
+
+            elif option == 'validation':
+                collection.validation.y = self._model.predict(collection.validation.x)
+
+            elif option == 'test':
+                collection.test.y = self._model.predict(collection.test.x)
+
+            else:
+                print('Invalid option.')
 
         return collection

@@ -10,12 +10,11 @@ from lib.data.AugmentData import AugmentData
 
 class DataGenerator:
 
-    # def __init__(self):
-    #     self.data = DataCollection()
-
     def __init__(self):
         self.images = []
         self.polygons = []
+
+        self.background_generator = self._get_real_background()
 
         for aclass in CLASSES:
             x_, y_ = self.read_polygons('{}/{}'.format('data/raw_notes',aclass))
@@ -32,7 +31,7 @@ class DataGenerator:
         allpolygons = []
 
         # Generate the background
-        background = next(self._get_real_background())
+        background = next(self.background_generator)
 
         for _ in range(no_images):
 

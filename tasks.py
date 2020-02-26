@@ -32,6 +32,8 @@ ALL = [
     'lib'
 ]
 
+
+
 @task
 def connect(ctx):
     ctx.conn = Connection(host=HOST, user=USER)
@@ -41,9 +43,16 @@ def close(ctx):
     ctx.conn.close()
 
 @task(pre=[connect], post=[close])
-def status(ctx):
+def ls(ctx):
     with ctx.conn.cd(ROOT):
         ctx.conn.run('find | sed \'s|[^/]*/|- |g\'')
+
+@task(pre=[connect], post=[close])
+def reset(ctx):
+    ctx.conn.run('rm -rf {}'.format(ROOT), pty=True)
+
+
+# Setup the environment
 
 @task(pre=[connect], post=[close])
 def setup(ctx):
@@ -72,6 +81,10 @@ def pull(ctx):
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
 
+
+
+# Generate the data
+
 @task(pre=[connect], post=[close])
 def generate(ctx, model=''):
     ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(ALL), remote=REMOTE))
@@ -79,6 +92,8 @@ def generate(ctx, model=''):
         with ctx.conn.prefix('source activate tensorflow2_p36'):
             ctx.conn.run('dtach -A /tmp/{} python generator.py'.format(ROOT), pty=True)
 
+
+# Train
 
 @task(pre=[connect], post=[close])
 def train(ctx, model=''):
@@ -95,9 +110,13 @@ def train(ctx, model=''):
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
 
+
 @task(pre=[connect], post=[close])
 def resume(ctx):
     ctx.conn.run('dtach -a /tmp/{}'.format(ROOT), pty=True)
+
+
+# Test
 
 @task(pre=[connect], post=[close])
 def test(ctx, model=''):
@@ -113,15 +132,9 @@ def test(ctx, model=''):
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
 
-@task(pre=[connect], post=[close])
-def clean(ctx):
-    ctx.conn.run('rm -rf {}/models'.format(ROOT), pty=True)
-    ctx.conn.run('rm -rf {}/logs'.format(ROOT), pty=True)
 
 
-@task(pre=[connect], post=[close])
-def remove(ctx):
-    ctx.conn.run('rm -rf {}'.format(ROOT), pty=True)
+# Tensorboard
 
 @task(pre=[connect], post=[close])
 def tbrun(ctx):
@@ -138,3 +151,9 @@ def tbtunnel(ctx):
     print("Tunnel Started")
     webbrowser.open_new_tab('localhost:{}'.format(TBPORT))
     os.system("ssh -N -L localhost:{}:localhost:{} {}@{}".format(TBPORT,TBPORT,USER,HOST))
+
+
+@task(pre=[connect], post=[close])
+def tbclean(ctx):
+    ctx.conn.run('rm -rf {}/models'.format(ROOT), pty=True)
+    ctx.conn.run('rm -rf {}/logs'.format(ROOT), pty=True)

@@ -15,7 +15,6 @@ class YOLOMetrics:
             logdir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
             super().__init__(log_dir = logdir, histogram_freq=1)
 
-
     class HistoryCheckpoint(keras.callbacks.Callback):
         def __init__(self, folder):
             self.folder = folder

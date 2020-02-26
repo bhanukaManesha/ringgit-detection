@@ -1,9 +1,11 @@
 fabric
+invoke
 imgaug
 h5py
 ipython
 numpy
-tensorflow==2.0.1
+# tensorflow==2.0.1
+tensorboard
 opencv-python==4.1.2.30
 imutils
 tqdm

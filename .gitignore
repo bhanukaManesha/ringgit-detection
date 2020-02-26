@@ -12,3 +12,4 @@ cash/*
 models/
 output_tests/
 output_render/
+logs/

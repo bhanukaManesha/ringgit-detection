@@ -49,7 +49,7 @@ class DataGenerator:
             # Calculating the height and width
             height, width, channels = background.shape
 
-            random_size = random.uniform(0.6, 0.75)
+            random_size = random.uniform(0.8, 0.95)
             height_of_note = int(math.floor(height * random_size))
             width_of_note = int(math.floor(width * random_size))
 
@@ -151,6 +151,8 @@ class DataGenerator:
 
         bimages = self._images_from_directory('data/raw_backgrounds')
 
+        print("{} background images.".format(len(bimages)))
+
         while True:
 
             image = random.choice(bimages)
@@ -162,7 +164,9 @@ class DataGenerator:
     def _images_from_directory(self, folder):
 
         images = []
+
         image_paths = glob.glob("{}/*.jpeg".format(folder))
+
 
         for path in image_paths:
 

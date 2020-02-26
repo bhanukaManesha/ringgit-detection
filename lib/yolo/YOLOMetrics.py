@@ -10,12 +10,16 @@ from common import *
 
 class YOLOMetrics:
 
-    class Tensorboard(keras.callbacks.TensorBoard):
+    class EarlyStoppingCallback(keras.callbacks.EarlyStopping):
+        def __init__(self):
+            super().__init__(monitor='val_loss', mode='min', verbose=1, patience=50)
+
+    class TensorboardCallback(keras.callbacks.TensorBoard):
         def __init__(self):
             logdir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
             super().__init__(log_dir = logdir, histogram_freq=1)
 
-    class HistoryCheckpoint(keras.callbacks.Callback):
+    class HistoryCheckpointCallback(keras.callbacks.Callback):
         def __init__(self, folder):
             self.folder = folder
         def on_train_begin(self, logs={}):

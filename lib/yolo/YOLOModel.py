@@ -29,9 +29,11 @@ class YOLOModel :
         folder = 'models/{:%Y%m%d-%H%M%S}'.format(now)
         os.makedirs(folder)
 
-        self._history_checkpoint = YOLOMetrics.HistoryCheckpoint(folder=folder)
-        self._tensorboard = YOLOMetrics.Tensorboard()
+        self._history_checkpoint = YOLOMetrics.HistoryCheckpointCallback(folder=folder)
+        self._tensorboard = YOLOMetrics.TensorboardCallback()
+        self._earlystopping = YOLOMetrics.EarlyStoppingCallback()
         self._model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
+
 
         self._datasource = None
         self._options = options
@@ -142,7 +144,10 @@ class YOLOModel :
             epochs=self._options['epoch'],
             validation_data=(self._datasource.validation.x, self._datasource.validation.y),
             shuffle=True,
-            callbacks=[self._model_checkpoint, self._history_checkpoint, self._tensorboard])
+            callbacks=[
+                self._model_checkpoint,
+                self._history_checkpoint,
+                self._tensorboard])
 
     def predict(self, options):
 

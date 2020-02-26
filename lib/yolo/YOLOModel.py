@@ -30,6 +30,7 @@ class YOLOModel :
         os.makedirs(folder)
 
         self._history_checkpoint = YOLOMetrics.HistoryCheckpoint(folder=folder)
+        self._tensorboard = YOLOMetrics.Tensorboard()
         self._model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
         self._datasource = None
@@ -39,25 +40,25 @@ class YOLOModel :
         input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
         x = input_layer
 
-        SEED = 4
+        SEED = 2
         for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
             SEED = SEED * 2
             x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
             x = BatchNormalization()(x)
             x = Activation('relu')(x)
             # x = Dropout(0.2) (x)
-            # for _ in range(i):
-            #     x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-            #     x = BatchNormalization()(x)
-            #     x = Activation('relu')(x)
+            for _ in range(i):
+                x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
+                x = BatchNormalization()(x)
+                x = Activation('relu')(x)
 
-            #     x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-            #     x = BatchNormalization()(x)
-            #     x = Activation('relu')(x)
+                x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
+                x = BatchNormalization()(x)
+                x = Activation('relu')(x)
 
             x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
-        SEED = SEED * 2
+        # SEED = SEED * 2
         for i in range(4):
             SEED = SEED // 2
             x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
@@ -141,7 +142,7 @@ class YOLOModel :
             epochs=self._options['epoch'],
             validation_data=(self._datasource.validation.x, self._datasource.validation.y),
             shuffle=True,
-            callbacks=[self._model_checkpoint, self._history_checkpoint])
+            callbacks=[self._model_checkpoint, self._history_checkpoint, self._tensorboard])
 
     def predict(self, options):
 

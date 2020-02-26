@@ -2,30 +2,34 @@
 import glob
 from fabric import Connection
 from invoke import task
+import os
+import webbrowser
 
-HOST        = 'ec2-13-250-110-92.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-54-169-181-128.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
+TBPORT      =  6006
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
 VENV        = 'tensorflow2_p36'
 MODEL       = 'models'
 OUTPUT      = 'output_tests'
 
 PYTHON_SCRIPTS = [
-    'aug.py',
+    'lib',
     'common.py',
-    'data.py',
     'generator.py',
-    'metrics.py',
-    'model.py',
-    'render.py',
-    'train.py',
-    'test.py'
+    'test.py',
+    'train.py'
 ]
 
-FOLDERS = [
+ALL = [
+    'common.py',
+    'generator.py',
+    'test.py',
+    'train.py',
     'models',
-    'data'
+    'data',
+    'lib'
 ]
 
 @task
@@ -37,12 +41,18 @@ def close(ctx):
     ctx.conn.close()
 
 @task(pre=[connect], post=[close])
+def status(ctx):
+    with ctx.conn.cd(ROOT):
+        ctx.conn.run('find | sed \'s|[^/]*/|- |g\'')
+
+@task(pre=[connect], post=[close])
 def setup(ctx):
     ctx.conn.run('mkdir -p {}'.format(ROOT))
     with ctx.conn.cd(ROOT):
         ctx.conn.run('mkdir -p {}'.format(MODEL))
         ctx.conn.run('mkdir -p {}'.format(OUTPUT))
         ctx.conn.run('sudo apt install -y dtach')
+
     # PIP
     ctx.conn.put('requirements.in', remote='{}/requirements.in'.format(ROOT))
     with ctx.conn.cd(ROOT):
@@ -52,7 +62,7 @@ def setup(ctx):
 
 @task
 def push(ctx, model=''):
-    ctx.run('rsync -rv --progress {files} {remote}'.format(files=' '.join(LOCAL_FILES).join(FOLDERS), remote=REMOTE))
+    ctx.run('rsync -rv --progress {files} {remote}'.format(files=' '.join(ALL), remote=REMOTE))
     model = sorted([fp for fp in glob.glob('models/*') if model and model in fp], reverse=True)
     if model:
         ctx.run('rsync -rv {folder}/ {remote}/{folder}'.format(remote=REMOTE, folder=model[0]))
@@ -64,10 +74,10 @@ def pull(ctx):
 
 @task(pre=[connect], post=[close])
 def generate(ctx, model=''):
-    ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(PYTHON_SCRIPTS), remote=REMOTE))
+    ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(ALL), remote=REMOTE))
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate tensorflow2_p36'):
-            ctx.conn.run('dtach -A /tmp/{} python generator.py -c 1000'.format(ROOT), pty=True)
+            ctx.conn.run('dtach -A /tmp/{} python generator.py'.format(ROOT), pty=True)
 
 
 @task(pre=[connect], post=[close])
@@ -80,6 +90,7 @@ def train(ctx, model=''):
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate tensorflow2_p36'):
             ctx.conn.run('dtach -A /tmp/{} python train.py'.format(ROOT), pty=True)
+
 
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
@@ -104,5 +115,26 @@ def test(ctx, model=''):
 
 @task(pre=[connect], post=[close])
 def clean(ctx):
+    ctx.conn.run('rm -rf {}/models'.format(ROOT), pty=True)
+    ctx.conn.run('rm -rf {}/logs'.format(ROOT), pty=True)
+
+
+@task(pre=[connect], post=[close])
+def remove(ctx):
+    ctx.conn.run('rm -rf {}'.format(ROOT), pty=True)
+
+@task(pre=[connect], post=[close])
+def tbrun(ctx):
     with ctx.conn.cd(ROOT):
-        ctx.conn.run('rm -rf *'.format(MODEL), pty=True)
+        with ctx.conn.prefix('source activate {}'.format(VENV)):
+            ctx.conn.run('dtach -A /tmp/{} tensorboard --logdir logs/scalars'.format("tb"), pty=True)
+
+@task(pre=[connect], post=[close])
+def tbresume(ctx):
+    ctx.conn.run('dtach -a /tmp/{}'.format("tb"), pty=True)
+
+@task
+def tbtunnel(ctx):
+    print("Tunnel Started")
+    webbrowser.open_new_tab('localhost:{}'.format(TBPORT))
+    os.system("ssh -N -L localhost:{}:localhost:{} {}@{}".format(TBPORT,TBPORT,USER,HOST))

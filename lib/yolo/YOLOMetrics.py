@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import tensorflow as tf
 from tensorflow import keras
@@ -8,6 +9,12 @@ from tensorflow.keras.metrics import binary_accuracy, categorical_accuracy
 from common import *
 
 class YOLOMetrics:
+
+    class Tensorboard(keras.callbacks.TensorBoard):
+        def __init__(self):
+            logdir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+            super().__init__(log_dir = logdir, histogram_freq=1)
+
 
     class HistoryCheckpoint(keras.callbacks.Callback):
         def __init__(self, folder):

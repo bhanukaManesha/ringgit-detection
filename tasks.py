@@ -140,11 +140,7 @@ def test(ctx, model=''):
 def tbrun(ctx):
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate {}'.format(VENV)):
-            ctx.conn.run('dtach -A /tmp/{} tensorboard --logdir logs/scalars'.format("tb"), pty=True)
-
-@task(pre=[connect], post=[close])
-def tbresume(ctx):
-    ctx.conn.run('dtach -a /tmp/{}'.format("tb"), pty=True)
+            ctx.conn.run('tensorboard --logdir logs/scalars')
 
 @task
 def tbtunnel(ctx):

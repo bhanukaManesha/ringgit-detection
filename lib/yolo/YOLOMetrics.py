@@ -17,7 +17,7 @@ class YOLOMetrics:
     class TensorboardCallback(keras.callbacks.TensorBoard):
         def __init__(self):
             logdir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
-            super().__init__(log_dir = logdir, histogram_freq=1)
+            super().__init__(log_dir = logdir, histogram_freq=1, profile_batch=0)
 
     class HistoryCheckpointCallback(keras.callbacks.Callback):
         def __init__(self, folder):
@@ -28,7 +28,7 @@ class YOLOMetrics:
             with open('{}/history.txt'.format(self.folder), 'w') as f:
                 self.model.summary(print_fn=lambda x: f.write(x + '\n'))
         def on_epoch_end(self, epoch, logs={}):
-            keys = ['loss', 'XY_','C_']
+            keys = ['loss','P_', 'XY_','C_']
             h = ' - '. join(['{}: {:.4f}'.format(k, logs[k]) for k in keys])
             h = h + ' // ' + ' - '. join(['val_{}: {:.4f}'.format(k, logs['val_'+k]) for k in keys])
             h = '{:03d} : '.format(epoch) + h
@@ -70,7 +70,7 @@ class YOLOMetrics:
 
         precision = (tp / (tp + fp))
 
-        return switch(
+        return K.switch(
             tf.equal(tf.math.reduce_mean(precision), 0),
             0.0,
             tf.math.reduce_mean(precision)
@@ -159,3 +159,13 @@ class YOLOMetrics:
             1.0,
             K.sum(categorical_accuracy(fact_cat, pred_cat) * fact_conf) / nonzero_count
         )
+
+    def P_(self, fact, pred):
+        fact = K.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+        pred = K.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
+        # Truth
+        fact_conf = fact[:,:,0]
+        # Prediction
+        pred_conf = pred[:,:,0]
+        # PROBABILITY
+        return binary_accuracy(fact_conf, pred_conf)

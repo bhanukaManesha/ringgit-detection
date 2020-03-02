@@ -1,54 +1,28 @@
 #!/usr/bin/env python
 import tensorflow as tf
 from tensorflow import keras
-from train import *
 import os
+import numpy as np
 
-def load_model(model_path):
+from lib.yolo.YOLOModel import YOLOModel
 
-    with open(model_path + "/model.json") as json_file:
-        json_config = json_file.read()
+def main():
 
-    model = keras.models.model_from_json(json_config)
-    model.load_weights(model_path + "/model_weights.h5")
+    yolomodel = YOLOModel()
+    yolomodel.load_model()
+    print(yolomodel.model.summary())
 
-    return model
+    # Fix this asap
+    yolodata = Data()
+    x_test,y_test = yolodata.get_test_data()
 
-def main(model_path):
+    results = yolomodel.model.predict(x_test)
 
-    model = load_model(model_path)
-    
-    x_train_2,y_train_2 = next(generator(10))
-    x_test,_ = load_images_from_directory(test_path)
-    x_test = np.concatenate((np.asarray(x_train_2),np.asarray(x_test)),axis=0)
-
-    # Remove the folder
-    shutil.rmtree("output_tests/")
-    
-    # Create a folder
-    directory = "output_tests"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    
-
-    results = model.predict(x_test)
-
-    # Plot training
-    for r in range(len(results)):
-        x_data = x_test[r]
-        y_data = results[r]
-
-        image, labels = convert_data_to_image(x_data, y_data)
-        labels = non_maximum_supression(labels)
-        rendered = render_with_labels(image, labels, display = False)
-        cv2.imwrite('output_tests/test_render_{:02d}.png'.format(r),rendered)
-
+    r = Render()
+    r.output_result(x_test, results)
 
 if __name__ == "__main__":
 
-    directory = "models/"
-    folders = [x[0] for x in os.walk(directory)]
-    folders.sort()
-    print(folders[-1])
-
-    main(folders[-1])
+    print("Initializing...")
+    main()
+    print("Test Done.")

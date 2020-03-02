@@ -7,7 +7,9 @@ p2_sg.pem
 
 backup/
 
-data/
+cash/*
+/data/
 models/
 output_tests/
 output_render/
+logs/

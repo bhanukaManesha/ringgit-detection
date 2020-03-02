@@ -46,4 +46,7 @@ if __name__ == '__main__':
         'batch' : int(args.batch_size)
     }
 
+    if int(args.epochs) == 0:
+        options['epoch'] = EPOCH
+
     main(options)

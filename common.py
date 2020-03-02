@@ -1,8 +1,9 @@
 
-CLASSES       = ["RM50","RM100"]
+CLASSES       = ["RM50","RM10"]
 CLASS = {
     "RM50" : 0,
-    "RM100" : 1
+    "RM10" : 1
+
 }
 CHANNEL     = 3
 
@@ -17,7 +18,8 @@ RWIDTH = int(378)
 RHEIGHT = int(378)
 
 # Training parameters
-SAMPLE = 500
+SAMPLE = 1000
+EPOCH = 300
 
 # Inference parameters
 DETECTION_PARAMETER = 0.8

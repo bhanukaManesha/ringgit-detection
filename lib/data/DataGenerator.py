@@ -17,7 +17,7 @@ class DataGenerator:
         self.background_generator = self._get_real_background()
 
         for aclass in CLASSES:
-            x_, y_ = self.read_polygons('{}/{}'.format('data/raw_notes',aclass))
+            x_, y_ = self.read_polygons('{}/{}'.format('data/notes',aclass))
             self.images.append(x_)
             self.polygons.append(y_)
 

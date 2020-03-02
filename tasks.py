@@ -5,14 +5,15 @@ from invoke import task
 import os
 import webbrowser
 
-HOST        = 'ec2-54-169-181-128.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-3-0-94-232.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
-TBPORT      =  6006
+TBPORT      =  8008
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
 VENV        = 'tensorflow2_p36'
 MODEL       = 'models'
 OUTPUT      = 'output_tests'
+LOGS        = 'logs'
 
 PYTHON_SCRIPTS = [
     'lib',
@@ -29,7 +30,8 @@ ALL = [
     'train.py',
     'models',
     'data',
-    'lib'
+    'lib',
+    'logs'
 ]
 
 
@@ -80,6 +82,7 @@ def push(ctx, model=''):
 def pull(ctx):
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
+    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=LOGS))
 
 
 
@@ -104,11 +107,13 @@ def train(ctx, model=''):
 
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate tensorflow2_p36'):
-            ctx.conn.run('dtach -A /tmp/{} python train.py'.format(ROOT), pty=True)
+            ctx.conn.run('dtach -A /tmp/{} python train.py -e 0'.format(ROOT), pty=True)
 
 
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
     ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
+    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=LOGS))
+
 
 
 @task(pre=[connect], post=[close])
@@ -140,7 +145,7 @@ def test(ctx, model=''):
 def tbrun(ctx):
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate {}'.format(VENV)):
-            ctx.conn.run('tensorboard --logdir logs/scalars')
+            ctx.conn.run('tensorboard --logdir logs/scalars --port={}'.format(TBPORT))
 
 @task
 def tbtunnel(ctx):

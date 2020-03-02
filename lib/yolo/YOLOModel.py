@@ -44,9 +44,9 @@ class YOLOModel :
 
         SEED = 2
         for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
-            SEED = SEED * 2
+            SEED = SEED * 3
             x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
-            x = BatchNormalization()(x)
+            # x = BatchNormalization()(x)
             x = Activation('relu')(x)
             # x = Dropout(0.2) (x)
             # for _ in range(i):
@@ -64,12 +64,12 @@ class YOLOModel :
         for i in range(4):
             SEED = SEED // 2
             x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
-            x = BatchNormalization()(x)
+            # x = BatchNormalization()(x)
             x = Activation('relu')(x)
-            x = Dropout(0.5) (x)
+            # x = Dropout(0.5) (x)
 
         x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
-        x = BatchNormalization()(x)
+        # x = BatchNormalization()(x)
         x = Activation('sigmoid')(x)
 
         model = Model(input_layer, x)

@@ -42,7 +42,7 @@ class YOLOModel :
         input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
         x = input_layer
 
-        SEED = 2
+        SEED = 16
         for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
             SEED = SEED * 2
             x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
@@ -60,13 +60,13 @@ class YOLOModel :
 
             x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
-        # SEED = SEED * 2
+        SEED = SEED * 2
         for i in range(4):
             SEED = SEED // 2
             x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
             x = BatchNormalization()(x)
             x = Activation('relu')(x)
-            # x = Dropout(0.5) (x)
+            x = Dropout(0.6) (x)
 
         x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
@@ -74,7 +74,7 @@ class YOLOModel :
 
         model = Model(input_layer, x)
         metrics = YOLOMetrics()
-        model.compile(optimizer="adam", loss=self.loss, metrics=[metrics.XY_,metrics.C_])
+        model.compile(optimizer="adam", loss=self.loss, metrics=[metrics.P_, metrics.XY_,metrics.C_])
         return model
 
     def load_model(self):

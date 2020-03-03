@@ -6,6 +6,8 @@ from tensorflow import keras
 import tensorflow.keras.backend as K
 from tensorflow.keras.metrics import binary_accuracy, categorical_accuracy
 
+from tensorboard.plugins.hparams import api as hp
+
 from common import *
 
 class YOLOMetrics:
@@ -15,8 +17,8 @@ class YOLOMetrics:
             super().__init__(monitor='val_loss', mode='min', verbose=1, patience=50)
 
     class TensorboardCallback(keras.callbacks.TensorBoard):
-        def __init__(self):
-            logdir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+        def __init__(self, logdir):
+            # logdir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
             super().__init__(log_dir = logdir, histogram_freq=1, profile_batch=0)
 
     class HistoryCheckpointCallback(keras.callbacks.Callback):
@@ -35,7 +37,8 @@ class YOLOMetrics:
             with open('{}/history.txt'.format(self.folder), 'a') as f:
                 f.write(h + '\n')
 
-    def PR_(self,fact,pred):
+    @staticmethod
+    def PR_(fact,pred):
         fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
         pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
         # Truth
@@ -76,7 +79,8 @@ class YOLOMetrics:
             tf.math.reduce_mean(precision)
             )
 
-    def RC_(self,fact,pred):
+    @staticmethod
+    def RC_(fact,pred):
 
         fact = tf.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
         pred = tf.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -120,8 +124,8 @@ class YOLOMetrics:
             0.0,
             tf.math.reduce_mean(recall)
             )
-
-    def XY_(self,fact, pred):
+    @staticmethod
+    def XY_(fact, pred):
         fact = K.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
         pred = K.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
         # Truth
@@ -144,7 +148,8 @@ class YOLOMetrics:
         # Mean.
         return K.switch(tf.equal(mean, 0), 0.0, mean)
 
-    def C_(self,fact, pred):
+    @staticmethod
+    def C_(fact, pred):
         fact = K.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
         pred = K.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
         # Truth
@@ -160,7 +165,8 @@ class YOLOMetrics:
             K.sum(categorical_accuracy(fact_cat, pred_cat) * fact_conf) / nonzero_count
         )
 
-    def P_(self, fact, pred):
+    @staticmethod
+    def P_(fact, pred):
         fact = K.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
         pred = K.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
         # Truth

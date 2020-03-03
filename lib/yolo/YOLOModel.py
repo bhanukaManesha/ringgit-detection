@@ -17,46 +17,48 @@ from datetime import datetime
 from common import *
 from lib.yolo.YOLOMetrics import YOLOMetrics
 
+from tensorboard.plugins.hparams import api as hp
+
 class YOLOModel :
 
     def __init__(self, options):
-        self._model = self.get_model()
-        print(self._model.summary())
         self._metrics = YOLOMetrics()
 
         # Setup the checkpoints
         now = datetime.now()
-        folder = 'models/{:%Y%m%d-%H%M%S}'.format(now)
-        os.makedirs(folder)
+        self.folder = 'models/{:%Y%m%d-%H%M%S}'.format(now)
+        os.makedirs(self.folder)
 
-        self._history_checkpoint = YOLOMetrics.HistoryCheckpointCallback(folder=folder)
-        self._tensorboard = YOLOMetrics.TensorboardCallback()
-        self._earlystopping = YOLOMetrics.EarlyStoppingCallback()
-        self._model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
+        # self._history_checkpoint = YOLOMetrics.HistoryCheckpointCallback(folder=folder)
+        # self._tensorboard = YOLOMetrics.TensorboardCallback()
+        # self._earlystopping = YOLOMetrics.EarlyStoppingCallback()
+        # self._model_checkpoint = ModelCheckpoint('{}/model_weights.h5'.format(folder), save_weights_only=True)
 
 
         self._datasource = None
         self._options = options
 
-    def get_model(self):
+    def get_model(self,hparams):
+
         input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
         x = input_layer
 
-        SEED = 2
+        SEED = hparams['seed']
         for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
             SEED = SEED * 2
             x = Conv2D(SEED, 3, padding='same', data_format="channels_last")(x)
             x = BatchNormalization()(x)
             x = Activation('relu')(x)
             # x = Dropout(0.2) (x)
-            for _ in range(i):
-                x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
-                x = BatchNormalization()(x)
-                x = Activation('relu')(x)
+            if hparams['extend'] == 1:
+                for _ in range(i):
+                    x = Conv2D(SEED // 2, 1, padding='same', data_format="channels_last")(x)
+                    x = BatchNormalization()(x)
+                    x = Activation('relu')(x)
 
-                x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
-                x = BatchNormalization()(x)
-                x = Activation('relu')(x)
+                    x = Conv2D(SEED , 3, padding='same',data_format="channels_last")(x)
+                    x = BatchNormalization()(x)
+                    x = Activation('relu')(x)
 
             x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
 
@@ -66,7 +68,7 @@ class YOLOModel :
             x = Conv2D(SEED, 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
             x = BatchNormalization()(x)
             x = Activation('relu')(x)
-            x = Dropout(0.5) (x)
+            x = Dropout(hparams['dropout']) (x)
 
         x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last")(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = BatchNormalization()(x)
@@ -74,7 +76,7 @@ class YOLOModel :
 
         model = Model(input_layer, x)
         metrics = YOLOMetrics()
-        model.compile(optimizer="adam", loss=self.loss, metrics=[metrics.P_, metrics.XY_,metrics.C_])
+        model.compile(optimizer=hparams['optimizer'], loss=self.loss, metrics=[YOLOMetrics.P_, YOLOMetrics.XY_,YOLOMetrics.C_])
         return model
 
     def load_model(self):
@@ -136,7 +138,10 @@ class YOLOModel :
         # --- Total loss
         return K.sum(conf_loss + 5 * box_loss + cat_loss, axis=-1)
 
-    def train(self):
+    def train(self, logdir, hparams):
+        self._model = self.get_model(hparams)
+        # print(self._model.summary())
+
         self._model.fit(
             x=self._datasource.train.x,
             y=self._datasource.train.y,
@@ -145,9 +150,10 @@ class YOLOModel :
             validation_data=(self._datasource.validation.x, self._datasource.validation.y),
             shuffle=True,
             callbacks=[
-                self._model_checkpoint,
-                self._history_checkpoint,
-                self._tensorboard])
+                ModelCheckpoint('{}/model_weights.h5'.format(self.folder), save_weights_only=True),
+                YOLOMetrics.HistoryCheckpointCallback(folder=self.folder),
+                YOLOMetrics.TensorboardCallback(logdir),
+                hp.KerasCallback(logdir, hparams)])
 
     def predict(self, options):
 

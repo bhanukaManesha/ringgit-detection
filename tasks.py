@@ -5,10 +5,10 @@ from invoke import task
 import os
 import webbrowser
 
-HOST        = 'ec2-3-0-90-30.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-54-254-242-159.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
-TBPORT      =  8008
+TBPORT      =  6006
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
 VENV        = 'tensorflow2_p36'
 MODEL       = 'models'
@@ -145,7 +145,7 @@ def test(ctx, model=''):
 def tbrun(ctx):
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate {}'.format(VENV)):
-            ctx.conn.run('tensorboard --logdir logs/scalars --port={}'.format(TBPORT))
+            ctx.conn.run('tensorboard --logdir logs/hparam_tuning --port={}'.format(TBPORT))
 
 @task
 def tbtunnel(ctx):

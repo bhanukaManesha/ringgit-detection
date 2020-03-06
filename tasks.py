@@ -14,6 +14,7 @@ VENV        = 'tensorflow2_p36'
 MODEL       = 'models'
 OUTPUT      = 'output_tests'
 LOGS        = 'logs'
+DATA        = 'data'
 
 PYTHON_SCRIPTS = [
     'lib',
@@ -80,9 +81,10 @@ def push(ctx, model=''):
 
 @task
 def pull(ctx):
-    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
-    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
-    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=LOGS))
+    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
+    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
+    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=LOGS))
+    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=DATA))
 
 
 

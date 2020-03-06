@@ -22,13 +22,17 @@ def main(options):
     datacollection = DataCollection.frompickle('data/pickles', 'collection.pickle')
     yolomodel._datasource = datacollection
 
-    HP_SEED = hp.HParam('seed', hp.Discrete([2,4,8,16]))
-    HP_EXTEND = hp.HParam('extend', hp.Discrete([0,1]))
-    HP_DROPOUT = hp.HParam('dropout', hp.RealInterval(0.2, 0.5))
-    HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['adam', 'sgd','nadam']))
+    # HP_SEED = hp.HParam('seed', hp.Discrete([16]))
+    # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['nadam']))
+    HP_SEED = hp.HParam('seed', hp.Discrete([8,16]))
+    HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['nadam','adam']))
 
-    # Remove the folder
-    shutil.rmtree("{}/".format('logs'))
+    try:
+        # Remove the folder
+        shutil.rmtree("{}/".format('logs'))
+    except FileNotFoundError:
+        pass
+
     # Create a folder
     if not os.path.exists('logs'):
         os.makedirs('logs')
@@ -36,20 +40,16 @@ def main(options):
     session_num = 0
 
     for seed in HP_SEED.domain.values:
-        for extend in HP_EXTEND.domain.values:
-            for dropout_rate in (HP_DROPOUT.domain.min_value, HP_DROPOUT.domain.max_value):
-                for optimizer in HP_OPTIMIZER.domain.values:
-                    hparams = {
-                        'seed': seed,
-                        'extend' : extend,
-                        'dropout': dropout_rate,
-                        'optimizer': optimizer,
-                    }
-                    run_name = "run-%s" % {h: hparams[h] for h in hparams}
-                    print('--- Starting trial: %s' % run_name)
-                    print({h: hparams[h] for h in hparams})
-                    yolomodel.train('logs/hparam_tuning/' + run_name, hparams)
-                    session_num += 1
+        for optimizer in HP_OPTIMIZER.domain.values:
+            hparams = {
+                'seed': seed,
+                'optimizer': optimizer,
+            }
+            run_name = "run-%s" % {h: hparams[h] for h in hparams}
+            print('--- Starting trial: %s' % run_name)
+            print({h: hparams[h] for h in hparams})
+            yolomodel.train('logs/hparam_tuning/' + run_name, hparams)
+            session_num += 1
 
 
     # ---------- Test

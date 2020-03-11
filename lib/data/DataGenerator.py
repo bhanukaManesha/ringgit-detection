@@ -319,6 +319,12 @@ class DataGenerator:
 
         return background
 
+    def update_label_class(label):
+        label["class"] = CLASS[label["class"]]
+        return label
+
+
+
     def from_directory(self, folder):
 
         image_paths = glob.glob("{}/images/*.png".format(folder))
@@ -338,6 +344,8 @@ class DataGenerator:
                 # Open label file.
                 with open(label_path, 'r') as f:
                     alabel = json.load(f)
+                alabel = update_label_class(alabel)
+                
                 # Open image file.
                 aimage = cv2.imread(image_path)
                 assert(aimage.shape[0] == aimage.shape[1])

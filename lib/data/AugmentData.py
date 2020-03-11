@@ -15,9 +15,9 @@ class AugmentData(Data):
     def __init__(self, data, dtype):
         super().__init__(data, dtype)
         self.augmentationseq = iaa.Sequential([
-            iaa.ChangeColorTemperature((4000, 9000)),
+            # iaa.ChangeColorTemperature((4000, 9000)),
             iaa.Rotate(rotate=(0, 359)),
-            iaa.Affine(scale=(0.8, 1.2)),
+            # iaa.Affine(scale=(0.8, 1.2)),
             # iaa.ElasticTransformation(alpha=(0, 5.0), sigma=0.5),
             # iaa.PerspectiveTransform(scale=(0.02, 0.08), keep_size=True),
             iaa.Resize({'width': WIDTH, 'height': HEIGHT}, interpolation=imgaug.ALL)

@@ -49,18 +49,22 @@ def main(options):
             print('--- Starting trial: %s' % run_name)
             print({h: hparams[h] for h in hparams})
             yolomodel.train('logs/hparam_tuning/' + run_name, hparams)
+
+
+            # ---------- Test
+
+            renderoptions = ['train','validation']
+
+            # Get model prediction
+            resultcollection = yolomodel.predict(renderoptions)
+
+            # Render the result
+            resultcollection.render('output_tests/{}'.format(run_name), renderoptions)
+
             session_num += 1
 
 
-    # ---------- Test
-
-    # options = ['train','test']
-
-    # Get model prediction
-    # resultcollection = yolomodel.predict(options)
-
-    # Render the result
-    # resultcollection.render('output_tests', options)
+    
 
 
 

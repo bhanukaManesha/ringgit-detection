@@ -319,15 +319,16 @@ class DataGenerator:
 
         return background
 
-    def update_label_class(label):
-        label["class"] = CLASS[label["class"]]
-        return label
+    def __update_label_class(self,labels):
+        for label in labels:
+            label['class'] = CLASS[label['class']]
+        return labels
 
 
 
-    def from_directory(self, folder):
+    def from_directory(self, folder, imgtype):
 
-        image_paths = glob.glob("{}/images/*.png".format(folder))
+        image_paths = glob.glob("{}/images/*.{}".format(folder,imgtype))
         label_paths = glob.glob("{}/labels/*.json".format(folder))
 
         image_paths.sort()
@@ -335,16 +336,16 @@ class DataGenerator:
 
         datas = []
 
-        for apath in glob.glob('{}/images/*.png'.format(folder), recursive=True):
+        for apath in glob.glob('{}/images/*.{}'.format(folder,imgtype), recursive=True):
             aname = pathlib.Path(apath).stem
-            image_path = '{}/images/{}.png'.format(folder,aname)
+            image_path = '{}/images/{}.{}'.format(folder,aname, imgtype)
             label_path = '{}/labels/{}.json'.format(folder,aname)
 
             try:
                 # Open label file.
                 with open(label_path, 'r') as f:
                     alabel = json.load(f)
-                alabel = update_label_class(alabel)
+                alabel = self.__update_label_class(alabel)
                 
                 # Open image file.
                 aimage = cv2.imread(image_path)

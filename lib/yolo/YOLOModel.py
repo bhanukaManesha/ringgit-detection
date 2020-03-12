@@ -96,6 +96,7 @@ class YOLOModel :
         except FileNotFoundError:
             print("Check the file path.")
 
+
     def loss(self,fact, pred):
         fact = K.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
         pred = K.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
@@ -122,12 +123,12 @@ class YOLOModel :
 
         # --- Confident loss
         conf_loss = K.binary_crossentropy(fact_conf, pred_conf)
-        conf_loss = (mask_obj * conf_loss) + (0.015 * mask_noobj * conf_loss)
+        conf_loss = (mask_obj * conf_loss) + (mask_noobj * conf_loss)
         # print('conf_loss.shape: ', conf_loss.shape)
 
         # --- Box loss
-        xy_loss  = K.square(fact_x - pred_x) + K.square(fact_y - pred_y)
-        wh_loss  = K.square(K.sqrt(fact_w) - K.sqrt(pred_w)) + K.square(K.sqrt(fact_h) - K.sqrt(pred_h))
+        xy_loss  = K.binary_crossentropy(fact_x,pred_x) + K.binary_crossentropy(fact_y,pred_y)
+        wh_loss  = K.binary_crossentropy(K.sqrt(fact_w),K.sqrt(pred_w)) + K.binary_crossentropy(K.sqrt(fact_h),K.sqrt(pred_h))
         box_loss = mask_obj * (xy_loss + wh_loss)
         # print('box_loss.shape: ', box_loss.shape)
 
@@ -136,7 +137,7 @@ class YOLOModel :
         # print('cat_loss.shape: ', cat_loss.shape)
 
         # --- Total loss
-        return K.sum(conf_loss + 5 * box_loss + cat_loss, axis=-1)
+        return K.sum(conf_loss + box_loss + cat_loss, axis=-1)
 
     def train(self, logdir, hparams):
         self._model = self.get_model(hparams)

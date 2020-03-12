@@ -174,4 +174,4 @@ class YOLOMetrics:
         # Prediction
         pred_conf = pred[:,:,0]
         # PROBABILITY
-        return binary_accuracy(fact_conf, pred_conf)
+        return binary_accuracy(fact_conf, pred_conf, threshold=DETECTION_PARAMETER)

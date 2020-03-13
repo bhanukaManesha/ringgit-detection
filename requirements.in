@@ -4,7 +4,7 @@ imgaug
 h5py
 ipython
 numpy
-tensorflow
+# tensorflow
 tensorboard
 opencv-python==4.1.2.30
 imutils

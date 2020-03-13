@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, shutil, math
@@ -11,6 +12,9 @@ from common import *
 from lib.yolo.YOLOModel import YOLOModel
 from lib.data.DataCollection import DataCollection
 
+from tensorboard.plugins.hparams import api as hp
+import tensorflow as tf
+
 def main(options):
     yolomodel = YOLOModel(options)
 
@@ -18,24 +22,56 @@ def main(options):
     datacollection = DataCollection.frompickle('data/pickles', 'collection.pickle')
     yolomodel._datasource = datacollection
 
-    yolomodel.train()
+    # HP_SEED = hp.HParam('seed', hp.Discrete([16]))
+    # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['nadam']))
+    HP_SEED = hp.HParam('seed', hp.Discrete([8,16]))
+    HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['nadam','adam']))
 
-    # ---------- Test
+    try:
+        # Remove the folder
+        shutil.rmtree("{}/".format('logs'))
+    except FileNotFoundError:
+        pass
 
-    options = ['train','test']
+    # Create a folder
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
 
-    # Get model prediction
-    resultcollection = yolomodel.predict(options)
+    session_num = 0
 
-    # Render the result
-    resultcollection.render('output_tests', options)
+    for seed in HP_SEED.domain.values:
+        for optimizer in HP_OPTIMIZER.domain.values:
+            hparams = {
+                'seed': seed,
+                'optimizer': optimizer,
+            }
+            run_name = "run-%s" % {h: hparams[h] for h in hparams}
+            print('--- Starting trial: %s' % run_name)
+            print({h: hparams[h] for h in hparams})
+            yolomodel.train('logs/hparam_tuning/' + run_name, hparams)
+
+
+            # ---------- Test
+
+            renderoptions = ['train','validation']
+
+            # Get model prediction
+            resultcollection = yolomodel.predict(renderoptions)
+
+            # Render the result
+            resultcollection.render('output_tests/{}'.format(run_name), renderoptions)
+
+            session_num += 1
+
+
+    
 
 
 
 if __name__ == '__main__':
 
     parser = ArgumentParser()
-    parser.add_argument("-e", "-epochs", dest="epochs", default= 100,
+    parser.add_argument("-e", "-epochs", dest="epochs", default= 2,
                         help="number of epochs", metavar="file")
     parser.add_argument("-b", "-batch_size", dest="batch_size", default= 8,
                         help="render each image")

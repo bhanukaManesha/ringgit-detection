@@ -5,15 +5,16 @@ from invoke import task
 import os
 import webbrowser
 
-HOST        = 'ec2-3-0-94-232.ap-southeast-1.compute.amazonaws.com'
+HOST        = 'ec2-52-12-54-137.us-west-2.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
-TBPORT      =  8008
+TBPORT      =  6006
 REMOTE      = '{user}@{host}:{root}'.format(user=USER, host=HOST, root=ROOT)
 VENV        = 'tensorflow2_p36'
 MODEL       = 'models'
 OUTPUT      = 'output_tests'
 LOGS        = 'logs'
+DATA        = 'data'
 
 PYTHON_SCRIPTS = [
     'lib',
@@ -80,11 +81,16 @@ def push(ctx, model=''):
 
 @task
 def pull(ctx):
-    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
-    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
-    ctx.run('rsync -r {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=LOGS))
+    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
+    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
+    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=LOGS))
+    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=DATA))
 
-
+@task(pre=[connect], post=[close])
+def clean(ctx):
+    ctx.conn.run('rm -rf {}/models'.format(ROOT), pty=True)
+    ctx.conn.run('rm -rf {}/output_tests'.format(ROOT), pty=True)
+    ctx.conn.run('rm -rf {}/output_renders'.format(ROOT), pty=True)
 
 # Generate the data
 
@@ -145,7 +151,7 @@ def test(ctx, model=''):
 def tbrun(ctx):
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate {}'.format(VENV)):
-            ctx.conn.run('tensorboard --logdir logs/scalars --port={}'.format(TBPORT))
+            ctx.conn.run('tensorboard --logdir logs/hparam_tuning --port={}'.format(TBPORT))
 
 @task
 def tbtunnel(ctx):

@@ -5,7 +5,7 @@ from invoke import task
 import os
 import webbrowser
 
-HOST        = 'ec2-54-218-251-85.us-west-2.compute.amazonaws.com'
+HOST        = 'ec2-52-12-54-137.us-west-2.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 TBPORT      =  6006
@@ -86,7 +86,11 @@ def pull(ctx):
     ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=LOGS))
     ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=DATA))
 
-
+@task(pre=[connect], post=[close])
+def clean(ctx):
+    ctx.conn.run('rm -rf {}/models'.format(ROOT), pty=True)
+    ctx.conn.run('rm -rf {}/output_tests'.format(ROOT), pty=True)
+    ctx.conn.run('rm -rf {}/output_renders'.format(ROOT), pty=True)
 
 # Generate the data
 

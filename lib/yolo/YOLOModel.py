@@ -72,7 +72,7 @@ class YOLOModel :
 
         x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last",kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         # x = BatchNormalization()(x)
-        x = Activation('tanh')(x)
+        x = Activation('sigmoid')(x)
 
         model = Model(input_layer, x)
         metrics = YOLOMetrics()
@@ -165,7 +165,7 @@ class YOLOModel :
 
         # --- Confident loss
         conf_loss = K.square(fact_conf - pred_conf)
-        conf_loss = K.sum((mask_obj + 0.5 * mask_noobj) * conf_loss, axis = -1)
+        conf_loss = K.sum((mask_obj + 0.01 * mask_noobj) * conf_loss, axis = -1)
         # print('conf_loss.shape: ', conf_loss.shape)
 
         # --- Box loss
@@ -184,7 +184,7 @@ class YOLOModel :
         
     def train(self, logdir, hparams):
         self._model = self.get_model(hparams)
-        # print(self._model.summary())
+        print(self._model.summary())
 
         self._model.fit(
             x=self._datasource.train.x,

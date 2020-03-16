@@ -22,7 +22,7 @@ class DataGenerator:
             self.polygons.append(y_)
 
     # Can Optimize
-    def from_raw(self, x_images,y_polygons,no_images = 1):
+    def from_raw(self, x_images,y_polygons,no_images = 2):
         '''
         main function to generete the images
         @rows - number of rows for the image
@@ -49,7 +49,7 @@ class DataGenerator:
             # Calculating the height and width
             height, width, channels = background.shape
 
-            random_size = random.uniform(0.8, 0.95)
+            random_size = random.uniform(0.5, 0.7)
             height_of_note = int(math.floor(height * random_size))
             width_of_note = int(math.floor(width * random_size))
 
@@ -167,11 +167,8 @@ class DataGenerator:
 
         image_paths = glob.glob("{}/*.jpeg".format(folder))
 
-
         for path in image_paths:
-
             images.append(cv2.imread(path))
-
         return images
 
     def generate_geometrical_noise(self,image):

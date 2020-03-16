@@ -36,7 +36,8 @@ class DataCollection:
 
         # validatation data
         # validation = generator.from_directory('data/val', "jpeg")
-        validation = next(generator.serve(10))
+        # validation = next(generator.serve(10))
+        validation = train
 
         # testing data
         test = generator.from_directory('data/val', "jpeg")

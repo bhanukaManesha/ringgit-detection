@@ -15,8 +15,8 @@ class AugmentData(Data):
     def __init__(self, data, dtype):
         super().__init__(data, dtype)
         self.augmentationseq = iaa.Sequential([
-            iaa.ChangeColorTemperature((4000, 9000)),
-            iaa.GammaContrast((0.5, 2.0)),
+            # iaa.ChangeColorTemperature((4000, 9000)),
+            # iaa.GammaContrast((0.5, 2.0)),
             iaa.Rotate(rotate=(0, 359)),
             # iaa.Affine(scale=(0.8, 1.2)),
             # iaa.ElasticTransformation(alpha=(0, 5.0), sigma=0.5),
@@ -39,6 +39,9 @@ class AugmentData(Data):
 
         # Augment.
         self.x, pps = self.augmentationseq(image=self.x, polygons=pps)
+        self.x = cv2.cvtColor(self.x,cv2.COLOR_RGB2GRAY)
+
+        print("{}".format(self.x.shape))
 
         for i,polygon in enumerate(self.y):
 

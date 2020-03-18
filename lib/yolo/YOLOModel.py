@@ -60,7 +60,8 @@ class YOLOModel :
                 # x = BatchNormalization()(x)
                 x = Activation('relu')(x)
 
-            x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
+            # x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
+            x = Conv2D(SEED , 2, strides=2, padding='same',data_format="channels_last",kernel_regularizer=regularizers.l2(0.01))(x)
 
         SEED = SEED * 2
         for i in range(4):

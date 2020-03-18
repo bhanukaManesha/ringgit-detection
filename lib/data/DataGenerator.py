@@ -5,6 +5,8 @@ import numpy as np
 
 from common import *
 
+import threading
+
 from lib.data.Data import Data
 from lib.data.AugmentData import AugmentData
 
@@ -13,6 +15,7 @@ class DataGenerator:
     def __init__(self):
         self.images = []
         self.polygons = []
+        self.datas = []
 
         self.background_generator = self._get_real_background()
 
@@ -114,22 +117,26 @@ class DataGenerator:
 
         return np.asarray(images), np.asarray(points)
 
+    def worker(self):
+        aug = AugmentData.fromdataobj(self.from_raw(deepcopy(self.images), deepcopy(self.polygons)))
+        aug.augmentation()
+        aug.asdata()
+         # Append
+        self.datas.append(aug)
+
     def serve(self,batch_size):
 
-        datas = []
-
+        self.datas = []
+        self.workers = []
+        
         while True:
             # Create batch data.
             for i in tqdm(range(batch_size)):
+                self.workers.append(threading.Thread(target = self.worker))
+                self.workers[-1].start()
 
-                aug = AugmentData.fromdataobj(self.from_raw(deepcopy(self.images), deepcopy(self.polygons)))
-
-                aug.augmentation()
-
-                aug.asdata()
-
-                # Append
-                datas.append(aug)
+            for i in range(batch_size):
+                self.workers[i].join()
 
             yield self.merge_data_objs(datas, batch_size)
 

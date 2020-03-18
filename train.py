@@ -24,7 +24,7 @@ def main(options):
 
     # HP_SEED = hp.HParam('seed', hp.Discrete([16]))
     # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['nadam']))
-    HP_SEED = hp.HParam('seed', hp.Discrete([2,4,8,16]))
+    # HP_SEED = hp.HParam('seed', hp.Discrete([8,16,32]))
     HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['nadam','adam']))
 
     try:
@@ -39,29 +39,27 @@ def main(options):
 
     session_num = 0
 
-    for seed in HP_SEED.domain.values:
-        for optimizer in HP_OPTIMIZER.domain.values:
-            hparams = {
-                'seed': seed,
-                'optimizer': optimizer,
-            }
-            run_name = "run-%s" % {h: hparams[h] for h in hparams}
-            print('--- Starting trial: %s' % run_name)
-            print({h: hparams[h] for h in hparams})
-            yolomodel.train('logs/hparam_tuning/' + run_name, hparams)
+    for optimizer in HP_OPTIMIZER.domain.values:
+        hparams = {
+            'optimizer': optimizer,
+        }
+        run_name = "run-%s" % {h: hparams[h] for h in hparams}
+        print('--- Starting trial: %s' % run_name)
+        print({h: hparams[h] for h in hparams})
+        yolomodel.train('logs/hparam_tuning/' + run_name, hparams)
 
 
-            # ---------- Test
+        # ---------- Test
 
-            renderoptions = ['train','validation']
+        renderoptions = ['train','validation']
 
-            # Get model prediction
-            resultcollection = yolomodel.predict(renderoptions)
+        # Get model prediction
+        resultcollection = yolomodel.predict(renderoptions)
 
-            # Render the result
-            resultcollection.render('output_tests/{}'.format(run_name), renderoptions)
+        # Render the result
+        resultcollection.render('output_tests/{}'.format(run_name), renderoptions)
 
-            session_num += 1
+        session_num += 1
 
 
     

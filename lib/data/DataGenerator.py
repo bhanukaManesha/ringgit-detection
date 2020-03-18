@@ -53,7 +53,7 @@ class DataGenerator:
             # Calculating the height and width
             height, width, channels = background.shape
 
-            random_size = random.uniform(0.5, 0.7)
+            random_size = random.uniform(0.8, 0.95)
             height_of_note = int(math.floor(height * random_size))
             width_of_note = int(math.floor(width * random_size))
 
@@ -126,6 +126,8 @@ class DataGenerator:
         self.datas.append(aug)
 
     def serve(self,batch_size):
+
+        assert batch_size % THREADS == 0, "sample size should be a multiple of the threads"
 
         self.datas = []
         

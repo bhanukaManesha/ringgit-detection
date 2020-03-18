@@ -40,7 +40,7 @@ class AugmentData(Data):
 
         # Augment.
         self.x, pps = self.augmentationseq(image=self.x, polygons=pps)
-        self.x = cv2.cvtColor(self.x,cv2.COLOR_RGB2GRAY)
+        # self.x = cv2.cvtColor(self.x,cv2.COLOR_RGB2GRAY)
 
         # print("{}".format(self.x.shape))
 

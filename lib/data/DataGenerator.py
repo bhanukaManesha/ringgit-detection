@@ -17,7 +17,7 @@ class DataGenerator:
         self.polygons = []
         self.datas = []
 
-        self.background_generator = self._get_real_background()
+        self.backgrounds = self._get_real_background()
 
         for aclass in CLASSES:
             x_, y_ = self.read_polygons('{}/{}'.format('data/notes',aclass))
@@ -34,7 +34,8 @@ class DataGenerator:
         allpolygons = []
 
         # Generate the background
-        background = next(self.background_generator)
+        image = random.choice(self.backgrounds)
+        background = self._image_resize(image, width = RWIDTH, height=RHEIGHT)
 
         for _ in range(no_images):
 
@@ -127,16 +128,17 @@ class DataGenerator:
     def serve(self,batch_size):
 
         self.datas = []
-        self.workers = []
         
         while True:
             # Create batch data.
             for i in tqdm(range(batch_size)):
-                self.workers.append(threading.Thread(target = self.worker))
-                self.workers[-1].start()
+                self.workers = []
+                for j in range(8):
+                    self.workers.append(threading.Thread(target = self.worker))
+                    self.workers[-1].start()
 
-            for i in range(batch_size):
-                self.workers[i].join()
+                for k in range(8):
+                    self.workers[k].join()
 
             yield self.merge_data_objs(datas, batch_size)
 
@@ -160,13 +162,15 @@ class DataGenerator:
 
         print("{} background images.".format(len(bimages)))
 
-        while True:
+        # while True:
 
-            image = random.choice(bimages)
+        #     image = random.choice(bimages)
 
-            image = self._image_resize(image, width = RWIDTH, height=RHEIGHT)
+        #     image = self._image_resize(image, width = RWIDTH, height=RHEIGHT)
 
-            yield image
+        #     yield image
+
+        return bimages
 
     def _images_from_directory(self, folder):
 

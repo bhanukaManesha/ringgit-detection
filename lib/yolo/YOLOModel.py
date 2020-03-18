@@ -12,6 +12,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout
 from tensorflow.keras.backend import *
 from tensorflow.keras import regularizers
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
 
 from datetime import datetime
 
@@ -80,6 +81,23 @@ class YOLOModel :
         model.compile(optimizer=hparams['optimizer'], loss=self.loss, metrics=[YOLOMetrics.P_, YOLOMetrics.XY_,YOLOMetrics.C_])
         return model
 
+    def get_mobilenetv2(self,hparams):
+        
+        input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
+
+        base_model = MobileNetV2(input_shape=(WIDTH, HEIGHT, CHANNEL), weights='imagenet',include_top=False) #imports the mobilenet model and discards the last 1000 neuron layer.
+
+        x = base_model.output
+        x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last",kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
+        x = Activation('sigmoid')(x)
+
+
+        model = Model(input_layer, x)
+        metrics = YOLOMetrics()
+        model.compile(optimizer=hparams['optimizer'], loss=self.loss, metrics=[YOLOMetrics.P_, YOLOMetrics.XY_,YOLOMetrics.C_])
+        return model
+
+
     def load_model(self):
 
         directory = "models/"
@@ -134,9 +152,6 @@ class YOLOModel :
         # print('box_loss.shape: ', box_loss.shape)
 
         # --- Category loss
-        # print('pred_cat.shape: ', pred_cat.shape)
-        # print('fact_cat.shape: ', fact_cat.shape)
-        # print('mask_obj.shape: ', mask_obj.shape)
         cat_loss = mask_obj * K.sum(K.binary_crossentropy(fact_cat, pred_cat),axis=-1)
         # print('cat_loss.shape: ', cat_loss.shape)
 
@@ -190,7 +205,7 @@ class YOLOModel :
 
         
     def train(self, logdir, hparams):
-        self._model = self.get_model(hparams)
+        self._model = self.get_mobilenetv2(hparams)
         print(self._model.summary())
 
         self._model.fit(

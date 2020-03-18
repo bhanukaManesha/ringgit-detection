@@ -16,7 +16,7 @@ RWIDTH = int(378)
 RHEIGHT = int(378)
 
 # Training parameters
-SAMPLE = 500
+SAMPLE = 3000
 EPOCH = 300
 
 # Inference parameters

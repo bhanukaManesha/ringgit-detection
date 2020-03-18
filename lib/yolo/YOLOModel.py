@@ -124,7 +124,7 @@ class YOLOModel :
 
         # --- Confident loss
         conf_loss = K.binary_crossentropy(fact_conf, pred_conf)
-        conf_loss = (mask_obj * conf_loss) + (0.015 * mask_noobj * conf_loss)
+        conf_loss = (mask_obj * conf_loss) + (0.02 * mask_noobj * conf_loss)
         # print('conf_loss.shape: ', conf_loss.shape)
 
         # --- Box loss

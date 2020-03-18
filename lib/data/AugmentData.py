@@ -17,8 +17,8 @@ class AugmentData(Data):
         self.augmentationseq = iaa.Sequential([
             # iaa.ChangeColorTemperature((4000, 9000)),
             # iaa.GammaContrast((0.5, 2.0)),
-            # iaa.Rotate(rotate=(0, 359)),
-            iaa.Rot90((1, 3)),
+            iaa.Rotate(rotate=(0, 359)),
+            # iaa.Rot90((1, 3)),
             # iaa.Affine(scale=(0.8, 1.2)),
             # iaa.ElasticTransformation(alpha=(0, 5.0), sigma=0.5),
             # iaa.PerspectiveTransform(scale=(0.02, 0.08), keep_size=True),

@@ -5,7 +5,7 @@ from invoke import task
 import os
 import webbrowser
 
-HOST        = 'ec2-18-237-106-80.us-west-2.compute.amazonaws.com'
+HOST        = 'ec2-54-187-64-17.us-west-2.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 TBPORT      =  6006
@@ -99,7 +99,7 @@ def generate(ctx, model=''):
     ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(ALL), remote=REMOTE))
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate tensorflow2_p36'):
-            ctx.conn.run('dtach -A /tmp/{} python generator.py'.format(ROOT), pty=True)
+            ctx.conn.run('dtach -A /tmp/{} python generator.py -r T'.format(ROOT), pty=True)
 
 
 # Train

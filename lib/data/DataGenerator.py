@@ -25,7 +25,7 @@ class DataGenerator:
             self.polygons.append(y_)
 
     # Can Optimize
-    def from_raw(self, x_images,y_polygons,no_images = 2):
+    def from_raw(self, x_images,y_polygons,no_images = 1):
         '''
         main function to generete the images
         @rows - number of rows for the image
@@ -34,8 +34,8 @@ class DataGenerator:
         allpolygons = []
 
         # Generate the background
-        image = random.choice(self.backgrounds)
-        background = self._image_resize(image, width = RWIDTH, height=RHEIGHT)
+        bimage = deepcopy(random.choice(self.backgrounds))
+        background = self._image_resize(bimage, width = RWIDTH, height=RHEIGHT)
 
         for _ in range(no_images):
 
@@ -45,8 +45,8 @@ class DataGenerator:
             # Get random image and respective set of points
             rand_int = random.randint(0,len(x_images[output_currency_index]) - 1)
 
-            image = x_images[CLASS[output_currency]][rand_int]
-            points = np.asarray(y_polygons[CLASS[output_currency]][rand_int])
+            image = deepcopy(x_images[CLASS[output_currency]][rand_int])
+            points = np.asarray(deepcopy(y_polygons[CLASS[output_currency]][rand_int]))
 
             rotate_height, rotate_width, _ = image.shape
 
@@ -119,7 +119,7 @@ class DataGenerator:
         return np.asarray(images), np.asarray(points)
 
     def worker(self):
-        aug = AugmentData.fromdataobj(self.from_raw(deepcopy(self.images), deepcopy(self.polygons)))
+        aug = AugmentData.fromdataobj(self.from_raw(self.images, self.polygons))
         aug.augmentation()
         aug.asdata()
          # Append
@@ -131,16 +131,17 @@ class DataGenerator:
         
         while True:
             # Create batch data.
-            for i in tqdm(range(batch_size)):
-                self.workers = []
-                for j in range(8):
-                    self.workers.append(threading.Thread(target = self.worker))
-                    self.workers[-1].start()
+            for i in tqdm(range(0,batch_size,THREADS)):
+                self.threads = []
+                for j in range(THREADS):
+                    t = threading.Thread(target = self.worker)
+                    self.threads.append(t)
+                    t.start()
 
-                for k in range(8):
-                    self.workers[k].join()
+                for k in self.threads:
+                    k.join()
 
-            yield self.merge_data_objs(datas, batch_size)
+            yield self.merge_data_objs(self.datas, batch_size)
 
     def merge_data_objs(self,datas, batch_size):
 

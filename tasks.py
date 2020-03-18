@@ -99,7 +99,7 @@ def generate(ctx, model=''):
     ctx.run('rsync -rv {files} {remote}'.format(files=' '.join(ALL), remote=REMOTE))
     with ctx.conn.cd(ROOT):
         with ctx.conn.prefix('source activate tensorflow2_p36'):
-            ctx.conn.run('dtach -A /tmp/{} python generator.py -r T'.format(ROOT), pty=True)
+            ctx.conn.run('dtach -A /tmp/{} python generator.py'.format(ROOT), pty=True)
 
 
 # Train

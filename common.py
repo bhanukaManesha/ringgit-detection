@@ -3,7 +3,7 @@ CLASSES       = ["RM10"]
 CLASS = {
     "RM10" : 0
 }
-CHANNEL     = 1
+CHANNEL     = 3
 
 GRID_WIDTH  = int(16)
 GRID_HEIGHT = int(16)
@@ -16,9 +16,9 @@ RWIDTH = int(378)
 RHEIGHT = int(378)
 
 # Training parameters
-SAMPLE = 10000
+SAMPLE = 16000
 EPOCH = 300
-THREADS = 8
+THREADS = 16
 
 # Inference parameters
 DETECTION_PARAMETER = 0.75

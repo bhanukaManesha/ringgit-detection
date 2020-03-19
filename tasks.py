@@ -5,7 +5,7 @@ from invoke import task
 import os
 import webbrowser
 
-HOST        = 'ec2-54-187-64-17.us-west-2.compute.amazonaws.com'
+HOST        = 'ec2-54-214-114-187.us-west-2.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 TBPORT      =  6006
@@ -80,11 +80,14 @@ def push(ctx, model=''):
         ctx.run('rsync -rv {folder}/ {remote}/{folder}'.format(remote=REMOTE, folder=model[0]))
 
 @task
+def pulldata(ctx):
+    ctx.run('rsync -rv --progress {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=DATA))
+
+@task
 def pull(ctx):
-    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
-    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
-    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=LOGS))
-    ctx.run('rsync -rv {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=DATA))
+    ctx.run('rsync -rv --progress {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=MODEL))
+    ctx.run('rsync -rv --progress {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=OUTPUT))
+    ctx.run('rsync -rv --progress {remote}/{folder}/ {folder}'.format(remote=REMOTE, folder=LOGS))
 
 @task(pre=[connect], post=[close])
 def clean(ctx):

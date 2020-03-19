@@ -14,7 +14,7 @@ if __name__ == "__main__" :
 
     collection = DataCollection.generate()
 
-    collection.write_pickle('data/pickles','collection.pickle')
+    collection.save('data/h5py','data.h5')
 
     if render :
         options = ['train','validation']

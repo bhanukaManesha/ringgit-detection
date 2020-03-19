@@ -19,7 +19,7 @@ def main(options):
     yolomodel = YOLOModel(options)
 
     # Get the data
-    datacollection = DataCollection.frompickle('data/pickles', 'collection.pickle')
+    datacollection = DataCollection.fromh5py('data/h5py', 'data.h5')
     yolomodel._datasource = datacollection
 
     # HP_SEED = hp.HParam('seed', hp.Discrete([16]))

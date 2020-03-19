@@ -9,7 +9,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint, Callback
 
 from tensorflow.keras.optimizers import RMSprop,SGD
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout
+from tensorflow.keras.layers import Dense, Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout, GlobalAveragePooling2D
 from tensorflow.keras.backend import *
 from tensorflow.keras import regularizers
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
@@ -82,17 +82,24 @@ class YOLOModel :
         return model
 
     def get_mobilenetv2(self,hparams):
-        
-        input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
-
-        base_model = MobileNetV2(input_shape=(WIDTH, HEIGHT, CHANNEL), weights='imagenet',include_top=False) #imports the mobilenet model and discards the last 1000 neuron layer.
-
+        base_model = MobileNetV2(input_shape=(WIDTH, HEIGHT, CHANNEL), weights="imagenet", include_top=False) #imports the mobilenet model and discards the last 1000 neuron layer.
+        for layer in base_model.layers:
+            layer.trainable=False
         x = base_model.output
+
+        SEED = 64
+        for i in range(4):
+            SEED = SEED // 2
+            x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
+            # x = BatchNormalization()(x)
+            x = Activation('relu')(x)
+            x = Dropout(0.2) (x)
+
         x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last",kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = Activation('sigmoid')(x)
 
 
-        model = Model(input_layer, x)
+        model = Model(base_model.input, x)
         metrics = YOLOMetrics()
         model.compile(optimizer=hparams['optimizer'], loss=self.loss, metrics=[YOLOMetrics.P_, YOLOMetrics.XY_,YOLOMetrics.C_])
         return model

@@ -8,7 +8,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint, Callback
 
 from tensorflow.keras.optimizers import RMSprop,SGD
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, model_from_json
 from tensorflow.keras.layers import Dense, Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout, GlobalAveragePooling2D
 from tensorflow.keras.backend import *
 from tensorflow.keras import regularizers
@@ -23,7 +23,7 @@ from tensorboard.plugins.hparams import api as hp
 
 class YOLOModel :
 
-    def __init__(self, options):
+    def __init__(self, options=None):
         self._metrics = YOLOMetrics()
 
         # Setup the checkpoints
@@ -116,7 +116,7 @@ class YOLOModel :
             with open("{}/model.json".format(model_path)) as json_file:
                 json_config = json_file.read()
 
-            self.model = keras.models.model_from_json(json_config)
+            self.model = model_from_json(json_config)
             self.model.load_weights("{}/model_weights.h5".format(model_path))
 
         except FileNotFoundError:

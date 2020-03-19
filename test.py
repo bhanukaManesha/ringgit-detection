@@ -5,6 +5,8 @@ import os
 import numpy as np
 
 from lib.yolo.YOLOModel import YOLOModel
+from lib.data.DataCollection import DataCollection
+from lib.data.Render import Render
 
 def main():
 
@@ -12,14 +14,20 @@ def main():
     yolomodel.load_model()
     print(yolomodel.model.summary())
 
-    # Fix this asap
-    yolodata = Data()
-    x_test,y_test = yolodata.get_test_data()
+    # Get the data
+    datacollection = DataCollection.fromh5py('data/h5py', 'data.h5')
+    yolomodel._datasource = datacollection
 
-    results = yolomodel.model.predict(x_test)
+    # ---------- Test
 
-    r = Render()
-    r.output_result(x_test, results)
+    renderoptions = ['test']
+
+    # Get model prediction
+    resultcollection = yolomodel.predict(renderoptions)
+
+    # Render the result
+    resultcollection.render('output_tests/{}'.format("test"), renderoptions)
+
 
 if __name__ == "__main__":
 

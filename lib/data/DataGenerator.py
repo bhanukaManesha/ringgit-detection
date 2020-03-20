@@ -25,7 +25,7 @@ class DataGenerator:
             self.polygons.append(y_)
 
     # Can Optimize
-    def from_raw(self, x_images,y_polygons,no_images = 1):
+    def from_raw(self, x_images,y_polygons,no_images = 2):
         '''
         main function to generete the images
         @rows - number of rows for the image
@@ -38,7 +38,7 @@ class DataGenerator:
         # background = self._image_resize(bimage, width = RWIDTH, height=RHEIGHT)
         background = self._generate_background(mode="geometric")
 
-        for _ in range(no_images):
+        for _ in range(random.choice(range(1,no_images + 1))):
 
             output_currency = random.choice(CLASSES)
             output_currency_index = CLASS[output_currency]

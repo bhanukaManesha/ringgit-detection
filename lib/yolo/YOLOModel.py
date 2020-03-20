@@ -9,7 +9,8 @@ from tensorflow.keras.callbacks import ModelCheckpoint, Callback
 
 from tensorflow.keras.optimizers import RMSprop,SGD
 from tensorflow.keras.models import Model, model_from_json
-from tensorflow.keras.layers import Dense, Input, Conv2D, BatchNormalization, Activation, MaxPooling2D, Dropout, GlobalAveragePooling2D
+from tensorflow.keras.layers import Dense, Input, Conv2D, BatchNormalization, Activation
+from tensorflow.keras.layers import MaxPooling2D, Dropout, GlobalAveragePooling2D, LeakyReLU
 from tensorflow.keras.backend import *
 from tensorflow.keras import regularizers
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
@@ -23,13 +24,18 @@ from tensorboard.plugins.hparams import api as hp
 
 class YOLOModel :
 
-    def __init__(self, options=None):
+    def __init__(self, options=None, loadmodel = False):
         self._metrics = YOLOMetrics()
+        self._model = None
 
-        # Setup the checkpoints
-        now = datetime.now()
-        self.folder = 'models/{:%Y%m%d-%H%M%S}'.format(now)
-        os.makedirs(self.folder)
+        if loadmodel:
+            self.load_model()
+        
+        else:
+            # Setup the checkpoints
+            now = datetime.now()
+            self.folder = 'models/{:%Y%m%d-%H%M%S}'.format(now)
+            os.makedirs(self.folder)
 
         # self._history_checkpoint = YOLOMetrics.HistoryCheckpointCallback(folder=folder)
         # self._tensorboard = YOLOMetrics.TensorboardCallback()
@@ -83,17 +89,17 @@ class YOLOModel :
 
     def get_mobilenetv2(self,hparams):
         base_model = MobileNetV2(input_shape=(WIDTH, HEIGHT, CHANNEL), weights="imagenet", include_top=False) #imports the mobilenet model and discards the last 1000 neuron layer.
-        for layer in base_model.layers:
-            layer.trainable=False
+        # for layer in base_model.layers:
+        #     layer.trainable=False
         x = base_model.output
 
-        SEED = 64
+        SEED = 256
         for i in range(4):
             SEED = SEED // 2
             x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
-            # x = BatchNormalization()(x)
-            x = Activation('relu')(x)
-            x = Dropout(0.2) (x)
+            x = BatchNormalization()(x)
+            x = LeakyReLU(alpha=0.3) (x)
+            x = Dropout(0.5) (x)
 
         x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last",kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = Activation('sigmoid')(x)
@@ -111,13 +117,14 @@ class YOLOModel :
         folders = [x[0] for x in os.walk(directory)]
         folders.sort()
         model_path = folders[-1]
+        print(model_path)
 
         try:
             with open("{}/model.json".format(model_path)) as json_file:
                 json_config = json_file.read()
 
-            self.model = model_from_json(json_config)
-            self.model.load_weights("{}/model_weights.h5".format(model_path))
+            self._model = model_from_json(json_config)
+            self._model.load_weights("{}/model_weights.h5".format(model_path))
 
         except FileNotFoundError:
             print("Check the file path.")

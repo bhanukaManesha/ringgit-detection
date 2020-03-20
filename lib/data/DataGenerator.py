@@ -17,7 +17,7 @@ class DataGenerator:
         self.polygons = []
         self.datas = []
 
-        self.backgrounds = self._get_real_background()
+        # self.backgrounds = self._get_real_background()
 
         for aclass in CLASSES:
             x_, y_ = self.read_polygons('{}/{}'.format('data/notes',aclass))
@@ -34,8 +34,9 @@ class DataGenerator:
         allpolygons = []
 
         # Generate the background
-        bimage = deepcopy(random.choice(self.backgrounds))
-        background = self._image_resize(bimage, width = RWIDTH, height=RHEIGHT)
+        # bimage = deepcopy(random.choice(self.backgrounds))
+        # background = self._image_resize(bimage, width = RWIDTH, height=RHEIGHT)
+        background = self._generate_background(mode="geometric")
 
         for _ in range(no_images):
 
@@ -185,7 +186,7 @@ class DataGenerator:
             images.append(cv2.imread(path))
         return images
 
-    def generate_geometrical_noise(self,image):
+    def _generate_geometrical_noise(self,image):
         height, width, depth = image.shape
 
         # # Draw line.
@@ -260,7 +261,7 @@ class DataGenerator:
 
         elif mode == 'geometric':
 
-            return generate_geometrical_noise(np.full((RHEIGHT,RWIDTH,CHANNEL), 1., dtype = np.uint8))
+            return self._generate_geometrical_noise(np.full((RHEIGHT,RWIDTH,CHANNEL), 1., dtype = np.uint8))
 
     def _image_resize(self, image, width = None, height = None, inter = cv2.INTER_AREA):
         # initialize the dimensions of the image to be resized and
@@ -364,7 +365,7 @@ class DataGenerator:
 
                 aug = AugmentData((aimage,alabel), dtype='data')
 
-                aug.augmentation()
+                aug.resize()
 
                 aug.asdata()
 

@@ -25,7 +25,7 @@ def main(options):
     # HP_SEED = hp.HParam('seed', hp.Discrete([16]))
     # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['nadam']))
     # HP_SEED = hp.HParam('seed', hp.Discrete([8,16,32]))
-    HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['nadam','adam']))
+    HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['sgd','nadam']))
 
     try:
         # Remove the folder
@@ -51,7 +51,7 @@ def main(options):
 
         # ---------- Test
 
-        renderoptions = ['train','validation']
+        renderoptions = ['train','validation','test']
 
         # Get model prediction
         resultcollection = yolomodel.predict(renderoptions)

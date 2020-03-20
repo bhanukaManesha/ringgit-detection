@@ -10,9 +10,7 @@ from lib.data.Render import Render
 
 def main():
 
-    yolomodel = YOLOModel()
-    yolomodel.load_model()
-    print(yolomodel.model.summary())
+    yolomodel = YOLOModel(loadmodel=True)
 
     # Get the data
     datacollection = DataCollection.fromh5py('data/h5py', 'data.h5')
@@ -20,13 +18,13 @@ def main():
 
     # ---------- Test
 
-    renderoptions = ['test']
+    renderoptions = ['train','validation']
 
     # Get model prediction
     resultcollection = yolomodel.predict(renderoptions)
 
     # Render the result
-    resultcollection.render('output_tests/{}'.format("test"), renderoptions)
+    resultcollection.render('output_tests/test2', renderoptions)
 
 
 if __name__ == "__main__":

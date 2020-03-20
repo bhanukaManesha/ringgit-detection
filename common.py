@@ -22,7 +22,7 @@ THREADS = 4
 
 # Inference parameters
 DETECTION_PARAMETER = 0.75
-NMS = 0.5
+NMS = 0.1
 
 colors = {
         "RM50" : (0,255,0),

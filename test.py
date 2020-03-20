@@ -24,7 +24,7 @@ def main():
     resultcollection = yolomodel.predict(renderoptions)
 
     # Render the result
-    resultcollection.render('output_tests/test2', renderoptions)
+    resultcollection.render('output_tests/test3', renderoptions)
 
 
 if __name__ == "__main__":

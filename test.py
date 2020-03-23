@@ -4,6 +4,7 @@ from tensorflow import keras
 import os
 import numpy as np
 
+from common import *
 from lib.yolo.YOLOModel import YOLOModel
 from lib.data.DataCollection import DataCollection
 from lib.data.Render import Render
@@ -24,11 +25,11 @@ def main():
     resultcollection = yolomodel.predict(renderoptions)
 
     # Render the result
-    resultcollection.render('output_tests/test3', renderoptions)
+    resultcollection.render('output_tests/test{}'.format(str(TESTNO)), renderoptions)
 
 
 if __name__ == "__main__":
 
-    print("Initializing...")
+    print("Initializing Test {} ...".format(str(TESTNO)))
     main()
     print("Test Done.")

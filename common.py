@@ -17,11 +17,11 @@ RHEIGHT = int(378)
 
 # Training parameters
 SAMPLE = 16000
-EPOCH = 15
-THREADS = 4
+EPOCH = 30
+THREADS = 8
 
 # Inference parameters
-DETECTION_PARAMETER = 0.75
+DETECTION_PARAMETER = 0.8
 NMS = 0.1
 
 colors = {
@@ -31,3 +31,9 @@ colors = {
         "RM20" : (0,128,255),
         "RM100" : (255,255,255),
     }
+
+
+
+# Testing parameters
+MODELPATH =  ""
+TESTNO = 4

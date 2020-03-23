@@ -29,7 +29,7 @@ class YOLOModel :
         self._model = None
 
         if loadmodel:
-            self.load_model()
+            self.load_model(MODELPATH)
         
         else:
             # Setup the checkpoints
@@ -89,11 +89,11 @@ class YOLOModel :
 
     def get_mobilenetv2(self,hparams):
         base_model = MobileNetV2(input_shape=(WIDTH, HEIGHT, CHANNEL), weights="imagenet", include_top=False) #imports the mobilenet model and discards the last 1000 neuron layer.
-        # for layer in base_model.layers:
-        #     layer.trainable=False
+        for layer in base_model.layers:
+            layer.trainable=False
         x = base_model.output
 
-        SEED = 256
+        SEED = 1280
         for i in range(4):
             SEED = SEED // 2
             x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
@@ -111,12 +111,14 @@ class YOLOModel :
         return model
 
 
-    def load_model(self):
+    def load_model(self, model_path):
 
-        directory = "models/"
-        folders = [x[0] for x in os.walk(directory)]
-        folders.sort()
-        model_path = folders[-1]
+        if model_path == None:
+            directory = "models/"
+            folders = [x[0] for x in os.walk(directory)]
+            folders.sort()
+            model_path = folders[-1]
+        
         print(model_path)
 
         try:
@@ -152,7 +154,7 @@ class YOLOModel :
 
         # Mask
         mask_obj = fact_conf
-        mask_noobj = 1 - mask_obj
+        mask_noobj = 1 - fact_conf
 
         # --- Confident loss
         conf_loss = K.binary_crossentropy(fact_conf, pred_conf)
@@ -170,7 +172,7 @@ class YOLOModel :
         # print('cat_loss.shape: ', cat_loss.shape)
 
         # --- Total loss
-        total_loss =  K.sum(conf_loss + 5 * box_loss + cat_loss, axis=-1)
+        total_loss =  K.sum(conf_loss + 50 * box_loss + cat_loss, axis=-1)
         # print('total_loss.shape: ', total_loss.shape)
 
         return total_loss
@@ -207,7 +209,7 @@ class YOLOModel :
     #     # --- Box loss
     #     xy_loss  = K.square(fact_x - pred_x) + K.square(fact_y - pred_y)
     #     wh_loss  = K.square(K.sqrt(fact_w) - K.sqrt(pred_w)) + K.square(K.sqrt(fact_h) - K.sqrt(pred_h))
-    #     box_loss = 5 * K.sum(mask_obj * (xy_loss + wh_loss), axis= -1)
+    #     box_loss = 50 * K.sum(mask_obj * (xy_loss + wh_loss), axis= -1)
     #     # print('box_loss.shape: ', box_loss.shape)
 
     #     # --- Category loss

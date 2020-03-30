@@ -17,8 +17,8 @@ RHEIGHT = int(378)
 
 # Training parameters
 SAMPLE = 16000
-EPOCH = 30
-THREADS = 8
+EPOCH = 50
+THREADS = 4
 
 # Inference parameters
 DETECTION_PARAMETER = 0.8
@@ -35,5 +35,6 @@ colors = {
 
 
 # Testing parameters
-MODELPATH =  ""
-TESTNO = 4
+MODELPATH =  "models/20200326-213614"
+TESTNO = 14
+isNMS = True

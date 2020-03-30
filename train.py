@@ -25,7 +25,7 @@ def main(options):
     # HP_SEED = hp.HParam('seed', hp.Discrete([16]))
     # HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['nadam']))
     # HP_SEED = hp.HParam('seed', hp.Discrete([8,16,32]))
-    HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['sgd','nadam']))
+    HP_OPTIMIZER = hp.HParam('optimizer', hp.Discrete(['nadam']))
 
     try:
         # Remove the folder

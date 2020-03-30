@@ -12,6 +12,7 @@ from tensorflow.keras.models import Model, model_from_json
 from tensorflow.keras.layers import Dense, Input, Conv2D, BatchNormalization, Activation
 from tensorflow.keras.layers import MaxPooling2D, Dropout, GlobalAveragePooling2D, LeakyReLU
 from tensorflow.keras.backend import *
+from tensorflow.keras.losses import *
 from tensorflow.keras import regularizers
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
 
@@ -89,17 +90,17 @@ class YOLOModel :
 
     def get_mobilenetv2(self,hparams):
         base_model = MobileNetV2(input_shape=(WIDTH, HEIGHT, CHANNEL), weights="imagenet", include_top=False) #imports the mobilenet model and discards the last 1000 neuron layer.
-        for layer in base_model.layers:
-            layer.trainable=False
+        # for layer in base_model.layers:
+        #     layer.trainable=False
         x = base_model.output
 
-        SEED = 1280
+        SEED = 128
         for i in range(4):
             SEED = SEED // 2
             x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
             x = BatchNormalization()(x)
-            x = LeakyReLU(alpha=0.3) (x)
-            x = Dropout(0.5) (x)
+            x = LeakyReLU(alpha=0.2) (x)
+            x = Dropout(0.1) (x)
 
         x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last",kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         x = Activation('sigmoid')(x)
@@ -162,8 +163,10 @@ class YOLOModel :
         # print('conf_loss.shape: ', conf_loss.shape)
 
         # --- Box loss
-        xy_loss  = K.square(fact_x - pred_x) + K.square(fact_y - pred_y)
-        wh_loss  = K.square(K.sqrt(fact_w) - K.sqrt(pred_w)) + K.square(K.sqrt(fact_h) - K.sqrt(pred_h))
+        # xy_loss  = K.square(fact_x - pred_x) + K.square(fact_y - pred_y)
+        xy_loss = K.binary_crossentropy(fact_x,pred_x) + K.binary_crossentropy(fact_y,pred_y)
+        # wh_loss  = K.square(K.sqrt(fact_w) - K.sqrt(pred_w)) + K.square(K.sqrt(fact_h) - K.sqrt(pred_h))
+        wh_loss = K.binary_crossentropy(fact_w,pred_w) + K.binary_crossentropy(fact_y,pred_y)
         box_loss = mask_obj * (xy_loss + wh_loss)
         # print('box_loss.shape: ', box_loss.shape)
 
@@ -172,7 +175,7 @@ class YOLOModel :
         # print('cat_loss.shape: ', cat_loss.shape)
 
         # --- Total loss
-        total_loss =  K.sum(conf_loss + 50 * box_loss + cat_loss, axis=-1)
+        total_loss =  K.sum(conf_loss + 20 * box_loss + cat_loss, axis=-1)
         # print('total_loss.shape: ', total_loss.shape)
 
         return total_loss

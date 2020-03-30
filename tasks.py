@@ -5,7 +5,7 @@ from invoke import task
 import os
 import webbrowser
 
-HOST        = 'ec2-54-213-65-50.us-west-2.compute.amazonaws.com'
+HOST        = 'ec2-52-26-71-154.us-west-2.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 TBPORT      =  6006
@@ -53,6 +53,10 @@ def ls(ctx):
 @task(pre=[connect], post=[close])
 def reset(ctx):
     ctx.conn.run('rm -rf {}'.format(ROOT), pty=True)
+
+@task(pre=[connect], post=[close])
+def killpython(ctx):
+    ctx.conn.run('pkill -9 python', pty=True)
 
 
 # Setup the environment

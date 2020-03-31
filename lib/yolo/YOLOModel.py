@@ -90,8 +90,8 @@ class YOLOModel :
 
     def get_mobilenetv2(self,hparams):
         base_model = MobileNetV2(input_shape=(WIDTH, HEIGHT, CHANNEL), weights="imagenet", include_top=False) #imports the mobilenet model and discards the last 1000 neuron layer.
-        # for layer in base_model.layers:
-        #     layer.trainable=False
+        for layer in base_model.layers:
+            layer.trainable=False
         x = base_model.output
 
         SEED = 128
@@ -159,14 +159,14 @@ class YOLOModel :
 
         # --- Confident loss
         conf_loss = K.binary_crossentropy(fact_conf, pred_conf)
-        conf_loss = (mask_obj * conf_loss) + (0.02 * mask_noobj * conf_loss)
+        conf_loss = (mask_obj * conf_loss) + (0.015 * mask_noobj * conf_loss)
         # print('conf_loss.shape: ', conf_loss.shape)
 
         # --- Box loss
-        # xy_loss  = K.square(fact_x - pred_x) + K.square(fact_y - pred_y)
-        xy_loss = K.binary_crossentropy(fact_x,pred_x) + K.binary_crossentropy(fact_y,pred_y)
-        # wh_loss  = K.square(K.sqrt(fact_w) - K.sqrt(pred_w)) + K.square(K.sqrt(fact_h) - K.sqrt(pred_h))
-        wh_loss = K.binary_crossentropy(fact_w,pred_w) + K.binary_crossentropy(fact_y,pred_y)
+        xy_loss  = K.square(fact_x - pred_x) + K.square(fact_y - pred_y)
+        # xy_loss = K.binary_crossentropy(fact_x,pred_x) + K.binary_crossentropy(fact_y,pred_y)
+        wh_loss  = K.square(K.sqrt(fact_w) - K.sqrt(pred_w)) + K.square(K.sqrt(fact_h) - K.sqrt(pred_h))
+        # wh_loss = K.binary_crossentropy(fact_w,pred_w) + K.binary_crossentropy(fact_y,pred_y)
         box_loss = mask_obj * (xy_loss + wh_loss)
         # print('box_loss.shape: ', box_loss.shape)
 
@@ -175,53 +175,10 @@ class YOLOModel :
         # print('cat_loss.shape: ', cat_loss.shape)
 
         # --- Total loss
-        total_loss =  K.sum(conf_loss + 20 * box_loss + cat_loss, axis=-1)
+        total_loss =  K.sum(conf_loss + box_loss + cat_loss, axis=-1)
         # print('total_loss.shape: ', total_loss.shape)
 
         return total_loss
-
-    # def loss(self,fact, pred):
-    #     fact = K.reshape(fact, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
-    #     pred = K.reshape(pred, [-1, GRID_Y*GRID_X, 5+len(CLASSES)])
-
-    #     # Truth
-    #     fact_conf = fact[:,:,0]
-    #     fact_x    = fact[:,:,1]
-    #     fact_y    = fact[:,:,2]
-    #     fact_w    = fact[:,:,3]
-    #     fact_h    = fact[:,:,4]
-    #     fact_cat  = fact[:,:,5:]
-
-    #     # Prediction
-    #     pred_conf = pred[:,:,0]
-    #     pred_x    = pred[:,:,1]
-    #     pred_y    = pred[:,:,2]
-    #     pred_w    = pred[:,:,3]
-    #     pred_h    = pred[:,:,4]
-    #     pred_cat  = pred[:,:,5:]
-
-    #     # Mask
-    #     mask_obj = fact_conf
-    #     mask_noobj = 1 - fact_conf
-
-    #     # --- Confident loss
-    #     conf_loss = K.square(fact_conf - pred_conf)
-    #     conf_loss = K.sum((mask_obj + 0.01 * mask_noobj) * conf_loss, axis = -1)
-    #     # print('conf_loss.shape: ', conf_loss.shape)
-
-    #     # --- Box loss
-    #     xy_loss  = K.square(fact_x - pred_x) + K.square(fact_y - pred_y)
-    #     wh_loss  = K.square(K.sqrt(fact_w) - K.sqrt(pred_w)) + K.square(K.sqrt(fact_h) - K.sqrt(pred_h))
-    #     box_loss = 50 * K.sum(mask_obj * (xy_loss + wh_loss), axis= -1)
-    #     # print('box_loss.shape: ', box_loss.shape)
-
-    #     # --- Category loss
-    #     cat_loss = K.sum(mask_obj * K.sum(K.square(fact_cat - pred_cat),axis=-1), axis= -1)
-    #     # print('cat_loss.shape: ', cat_loss.shape)
-
-    #     # --- Total loss
-    #     return conf_loss + box_loss + cat_loss
-
         
     def train(self, logdir, hparams):
         self._model = self.get_mobilenetv2(hparams)

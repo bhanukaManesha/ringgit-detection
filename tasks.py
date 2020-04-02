@@ -5,7 +5,7 @@ from invoke import task
 import os
 import webbrowser
 
-HOST        = 'ec2-54-186-49-197.us-west-2.compute.amazonaws.com'
+HOST        = 'ec2-54-179-149-45.ap-southeast-1.compute.amazonaws.com'
 USER        = 'ubuntu'
 ROOT        = 'cash'
 TBPORT      =  6006

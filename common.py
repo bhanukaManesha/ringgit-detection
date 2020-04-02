@@ -35,6 +35,6 @@ colors = {
 
 
 # Testing parameters
-MODELPATH =  "models/20200326-213614"
-TESTNO = 14
+MODELPATH =  "models/20200402-045255"
+TESTNO = 4
 isNMS = True

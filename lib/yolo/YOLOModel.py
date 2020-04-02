@@ -52,7 +52,7 @@ class YOLOModel :
         input_layer = Input(shape=(WIDTH, HEIGHT, CHANNEL))
         x = input_layer
 
-        SEED = hparams['seed']
+        SEED = 8
         for i in range(0, int(math.log(GRID_X/WIDTH, 0.5))):
             SEED = SEED * 2
             x = Conv2D(SEED, 3, padding='same', data_format="channels_last",kernel_regularizer=regularizers.l2(0.01))(x)
@@ -71,13 +71,20 @@ class YOLOModel :
             # x = MaxPooling2D(pool_size=(2, 2), data_format="channels_last")(x)
             x = Conv2D(SEED , 2, strides=2, padding='same',data_format="channels_last",kernel_regularizer=regularizers.l2(0.01))(x)
 
-        SEED = SEED * 2
+        SEED = 128
         for i in range(4):
             SEED = SEED // 2
             x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
-            # x = BatchNormalization()(x)
-            x = Activation('relu')(x)
-            # x = Dropout(0.2) (x)
+            x = BatchNormalization()(x)
+            x = LeakyReLU(alpha=0.2) (x)
+            x = Dropout(0.1) (x)
+        # SEED = SEED * 2
+        # for i in range(2):
+        #     SEED = SEED // 2
+        #     x = Conv2D(SEED, 1, padding='same', data_format="channels_last", kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
+        #     # x = BatchNormalization()(x)
+        #     x = Activation('relu')(x)
+        #     # x = Dropout(0.2) (x)
 
         x = Conv2D(5+len(CLASSES), 1, padding='same', data_format="channels_last",kernel_regularizer=regularizers.l2(0.01))(x) # 1 x confident, 4 x coord, 5 x len(TEXTS)
         # x = BatchNormalization()(x)
@@ -90,8 +97,8 @@ class YOLOModel :
 
     def get_mobilenetv2(self,hparams):
         base_model = MobileNetV2(input_shape=(WIDTH, HEIGHT, CHANNEL), weights="imagenet", include_top=False) #imports the mobilenet model and discards the last 1000 neuron layer.
-        for layer in base_model.layers:
-            layer.trainable=False
+        # for layer in base_model.layers:
+        #     layer.trainable=False
         x = base_model.output
 
         SEED = 128
@@ -159,14 +166,14 @@ class YOLOModel :
 
         # --- Confident loss
         conf_loss = K.binary_crossentropy(fact_conf, pred_conf)
-        conf_loss = (mask_obj * conf_loss) + (0.015 * mask_noobj * conf_loss)
+        conf_loss = (mask_obj * conf_loss) + (0.02 * mask_noobj * conf_loss)
         # print('conf_loss.shape: ', conf_loss.shape)
 
         # --- Box loss
-        xy_loss  = K.square(fact_x - pred_x) + K.square(fact_y - pred_y)
-        # xy_loss = K.binary_crossentropy(fact_x,pred_x) + K.binary_crossentropy(fact_y,pred_y)
-        wh_loss  = K.square(K.sqrt(fact_w) - K.sqrt(pred_w)) + K.square(K.sqrt(fact_h) - K.sqrt(pred_h))
-        # wh_loss = K.binary_crossentropy(fact_w,pred_w) + K.binary_crossentropy(fact_y,pred_y)
+        # xy_loss  = K.square(fact_x - pred_x) + K.square(fact_y - pred_y)
+        xy_loss = K.binary_crossentropy(fact_x,pred_x) + K.binary_crossentropy(fact_y,pred_y)
+        # wh_loss  = K.square(K.sqrt(fact_w) - K.sqrt(pred_w)) + K.square(K.sqrt(fact_h) - K.sqrt(pred_h))
+        wh_loss = K.binary_crossentropy(fact_w,pred_w) + K.binary_crossentropy(fact_y,pred_y)
         box_loss = mask_obj * (xy_loss + wh_loss)
         # print('box_loss.shape: ', box_loss.shape)
 
@@ -175,13 +182,14 @@ class YOLOModel :
         # print('cat_loss.shape: ', cat_loss.shape)
 
         # --- Total loss
-        total_loss =  K.sum(conf_loss + box_loss + cat_loss, axis=-1)
+        total_loss =  K.sum(conf_loss + 20 * box_loss + cat_loss, axis=-1)
         # print('total_loss.shape: ', total_loss.shape)
 
         return total_loss
+
         
     def train(self, logdir, hparams):
-        self._model = self.get_mobilenetv2(hparams)
+        self._model = self.get_model(hparams)
         print(self._model.summary())
 
         self._model.fit(

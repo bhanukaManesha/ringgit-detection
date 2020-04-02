@@ -17,7 +17,7 @@ class DataGenerator:
         self.polygons = []
         self.datas = []
 
-        # self.backgrounds = self._get_real_background()
+        self.backgrounds = self._get_real_background()
 
         for aclass in CLASSES:
             x_, y_ = self.read_polygons('{}/{}'.format('data/notes',aclass))
@@ -34,9 +34,9 @@ class DataGenerator:
         allpolygons = []
 
         # Generate the background
-        # bimage = deepcopy(random.choice(self.backgrounds))
-        # background = self._image_resize(bimage, width = RWIDTH, height=RHEIGHT)
-        background = self._generate_background(mode="geometric")
+        bimage = deepcopy(random.choice(self.backgrounds))
+        background = self._image_resize(bimage, width = RWIDTH, height=RHEIGHT)
+        # background = self._generate_background(mode="geometric")
 
         for _ in range(no_images):
 

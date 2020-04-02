@@ -54,7 +54,7 @@ def main():
             ori_frame = frame[:1080,:1080,:]
             ori_x_frame = np.expand_dims(ori_frame, axis=0)
 
-            small_frame = image_resize(ori_frame, width=64, height=64)
+            small_frame = image_resize(ori_frame, width=224, height=224)
 
             x_frame = np.expand_dims(small_frame, axis=0)
             x_frame = x_frame / 255
@@ -67,7 +67,7 @@ def main():
 
 
                 image, labels = convert_data_to_image(x_data, y_data)
-                labels = non_maximum_supression(labels)
+                # labels = non_maximum_supression(labels)
                 rendered = render_with_labels(ori_frame, labels, display = False)
 
                 # Display the resulting frame
